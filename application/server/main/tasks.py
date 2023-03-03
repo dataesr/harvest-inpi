@@ -16,7 +16,7 @@ def create_task_clean(args):
 def create_task_all(args):
     # if args.get('recuperation', True):
     #     create_recuperation()
-    if args.get('harvest_inpi', True):
+    if args.get('harvest-inpi', True):
         harvest_inpi()
 
 
