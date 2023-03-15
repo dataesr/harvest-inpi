@@ -3,6 +3,7 @@ import os
 from inpi import *
 
 from application.server.main.logger import get_logger
+from inpi import p00_ftp_inpi, p01_unzip_inpi
 
 logger = get_logger(__name__)
 
@@ -21,6 +22,8 @@ def create_task_all(args):
 
 
 def harvest_inpi():
-    ftp_inpi.loading()
+    p00_ftp_inpi.loading()
     logger.debug("chargement de la dernière version complète de la DB de l'INPI")
+    p01_unzip_inpi.unzip()
+    logger.debug("dezippage des fichiers zippés")
 

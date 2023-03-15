@@ -48,7 +48,7 @@ services:
       - worker
 
 networks:
-  patstat-network:
+  inpi-network:
     driver: bridge
 
 volumes:
