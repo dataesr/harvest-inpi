@@ -1,12 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-"""
-This program unzips only the XML files named with the patent publication number.
-Folder structures evolve and cqn vary from a week to the next so this means that different strategies are needed
-to unzip only the wanted files.
-"""
-
 import glob
 import os
 import zipfile
@@ -18,329 +12,19 @@ import tarfile
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 
-def fan(fle: str) -> str:
-    """
-    Get year from file name
-    :param fle:
-    :return:
-    """
-    nom = fle.replace(".zip", "")
-    nom = nom.split("_")
-    annee = nom[len(nom) - 2]
+def unzip():
+    os.chdir(DATA_PATH)
 
-    return annee
-
-
-def select_xml(lfiles: list) -> list:
-    """
-    Select XML files which name only contains digits
-    :param lfiles:
-    :return:
-    """
-    lfiles = [re.findall(r".+\d+\.xml", it) for it in lfiles]
-    lfiles = [it for it in lfiles if it]
-    lfiles = list(map(lambda a: a[0], lfiles))
-    return lfiles
-
-
-def sfiles(zpr) -> list:
-    """
-    Select files within the zip we want to extract
-    :param zpr:
-    :return:
-    """
-    lfiles = zpr.namelist()
-    lfiles = select_xml(lfiles)
-    return lfiles
-
-
-def biblio():
-    """
-    Unzip folder with older patents
-    :return:
-    """
     list_dir = os.listdir(DATA_PATH)
     list_dir = list(set(map(lambda a: re.sub(r"\.zip", "", a), list_dir)))
     list_dir.sort()
+    dir2 = os.listdir(DATA_PATH)
 
     if 'Biblio_FR_Stock.tar' in list_dir:
         my_tar = tarfile.open('Biblio_FR_Stock.tar')
         my_tar.extractall('.')
         my_tar.close()
         os.remove('Biblio_FR_Stock.tar')
-
-
-def remove_extras(pths: list):
-    """
-    Remove CCP & schemas
-    :param pths:
-    :return:
-    """
-    for pth in pths:
-        list_dir = os.listdir(pth)
-        rem = list(map(lambda a: re.findall(r"FR_FRCCPST36_.+", a), list_dir))
-        rem = [item for item in rem if item]
-        rem = list(map(lambda a: a[0], rem))
-        if rem:
-            for i in rem:
-                os.remove(pth + i)
-
-        rem = list(map(lambda a: re.findall(r"Schema_.+", a), list_dir))
-        rem = [item for item in rem if item]
-        rem = list(map(lambda a: a[0], rem))
-        if rem:
-            for i in rem:
-                shutil.rmtree(pth + i)
-
-
-def id_fld1(pths: list) -> dict:
-    """
-    Older folders to apply the first types of unzipping
-    :param pths:
-    :return:
-    """
-    dco = {}
-
-    for path in pths:
-        fl = []
-        lzip = glob.glob(f"{path}*.zip")
-        if lzip:
-            for file in lzip:
-                nfile = file.replace(path, "")
-                nfile = nfile.replace(".zip", "")
-                with zipfile.ZipFile(file, 'r') as zip_ref:
-                    lfiles = sfiles(zip_ref)
-                    if lfiles:
-                        fl.append({nfile: lfiles})
-            if fl:
-                dco[path] = fl
-
-    return dco
-
-
-def select_unzip(dco: dict, clfs: list) -> (dict, dict, dict):
-    """
-    Split older folders according to their file structure (doc in first place in path or not, multiple paths
-    with zip files
-    :param dco:
-    :param clfs:
-    :return:
-    """
-    dc_dc = {}
-    dc_rste = {}
-    dc_mlti = {}
-    for clf in clfs:
-        doc = []
-        reste = []
-        multi = []
-        for dic in dco[clf]:
-            cl = list(dic.keys())[0]
-            liste = [re.sub(r"^/", "", item).split("/")[0] for item in dic[cl]]
-            valeurs = list(set(liste))
-            if len(valeurs) == 1:
-                if valeurs[0] == "doc":
-                    doc.append(cl)
-                else:
-                    reste.append(cl)
-            else:
-                multi.append(cl)
-            if doc:
-                dc_dc[clf] = doc
-            if reste:
-                dc_rste[clf] = reste
-            if multi:
-                dc_mlti[clf] = multi
-
-    return dc_dc, dc_rste, dc_mlti
-
-
-def select_missing(dco: dict, clfs: list) -> dict:
-    """
-    Select missing files within dictionary of the older folders
-    :param dco:
-    :param clfs:
-    :return:
-    """
-    dc_mis = {}
-    for clf in clfs:
-        lis = []
-        list_dir = os.listdir(clf)
-        list_dir2 = list(map(lambda a: a.replace(".zip", ""), list_dir))
-        for dic in dco[clf]:
-            cl = list(dic.keys())[0]
-            lis.append(cl)
-        mq = list(set(list_dir2).difference(set(lis)))
-        if mq:
-            dc_mis[clf] = mq
-
-    return dc_mis
-
-
-def unzip_doc(dc_dc: dict):
-    """
-    Unzipping of folders where single path that starts with doc
-    :param dc_dc:
-    :return:
-    """
-    clfs = list(dc_dc.keys())
-    for clf in clfs:
-        for item in dc_dc[clf]:
-            with zipfile.ZipFile(clf + item + ".zip", 'r') as zip_ref:
-                zip_ref.extractall(clf + item)
-                fol = glob.glob(f"{clf}{item}/doc/*.zip")
-                for fl in fol:
-                    with zipfile.ZipFile(fl, 'r') as zp_ref:
-                        lfiles = sfiles(zp_ref)
-                        for fil in lfiles:
-                            zp_ref.extract(fil, clf + item)
-            cont = os.listdir(clf + item)
-            for c in cont:
-                if os.path.isdir(clf + item + "/" + c):
-                    shutil.rmtree(clf + item + "/" + c)
-                else:
-                    lfiles = select_xml(cont)
-                    if c not in lfiles:
-                        if os.path.isfile(c):
-                            os.remove(clf + item + "/" + c)
-                    if c == "Volumeid":
-                        os.remove(clf + item + "/" + c)
-            os.remove(clf + item + ".zip")
-
-
-def unzip_reste(dc_rste: dict):
-    """
-    Unzipping of folders where single path which does not start with doc
-    :param dc_rste:
-    :return:
-    """
-    clfs = list(dc_rste.keys())
-    for clf in clfs:
-        for item in dc_rste[clf]:
-            with zipfile.ZipFile(clf + item + ".zip", 'r') as zip_ref:
-                zip_ref.extractall(clf + item)
-                fol = glob.glob(f"{clf}{item}/{item}/doc/*.zip")
-                for fl in fol:
-                    with zipfile.ZipFile(fl, 'r') as zp_ref:
-                        lfiles = sfiles(zp_ref)
-                        for fil in lfiles:
-                            zp_ref.extract(fil, clf + item)
-            cont = os.listdir(clf + item)
-            for c in cont:
-                if os.path.isdir(clf + item + "/" + c):
-                    shutil.rmtree(clf + item + "/" + c)
-                else:
-                    lfiles = select_xml(cont)
-                    if c not in lfiles:
-                        if os.path.isfile(c):
-                            os.remove(clf + item + "/" + c)
-                    if c == "Volumeid":
-                        os.remove(clf + item + "/" + c)
-            os.remove(clf + item + ".zip")
-
-
-def unzip_multi(dc_mlti: dict):
-    """
-    Unzip older folders with multiple paths with zip files
-    :param dc_mlti:
-    :return:
-    """
-    clfs = list(dc_mlti.keys())
-    for clf in clfs:
-        for item in dc_mlti[clf]:
-            with zipfile.ZipFile(clf + item + ".zip", 'r') as zip_ref:
-                zip_ref.extractall(clf + item)
-                fol = glob.glob(f"{clf}{item}/*.zip")
-                if fol:
-                    for fl in fol:
-                        with zipfile.ZipFile(fl, 'r') as zp_ref:
-                            lfiles = sfiles(zp_ref)
-                            for fil in lfiles:
-                                zp_ref.extract(fil, clf + item)
-                        os.remove(fl)
-            if os.path.isdir(f"{clf}{item}/doc/"):
-                fol = glob.glob(f"{clf}{item}/doc/*.zip")
-                for fl in fol:
-                    with zipfile.ZipFile(fl, 'r') as zip_ref:
-                        lfiles = sfiles(zip_ref)
-                        for fil in lfiles:
-                            zip_ref.extract(fil, clf + item)
-            cont = os.listdir(clf + item)
-            for c in cont:
-                if os.path.isdir(clf + item + "/" + c):
-                    shutil.rmtree(clf + item + "/" + c)
-                else:
-                    lfiles = select_xml(cont)
-                    if c not in lfiles:
-                        if os.path.isfile(c):
-                            os.remove(clf + item + "/" + c)
-                    if c == "Volumeid":
-                        os.remove(clf + item + "/" + c)
-            os.remove(clf + item + ".zip")
-
-
-def unzip_missing(dc_mis: dict):
-    """
-    Unzip missing files within dictionary of the older folders
-    :param dc_mis:
-    :return:
-    """
-    clfs = list(dc_mis.keys())
-    for clf in clfs:
-        dos = glob.glob(f"{clf}*.zip")
-        for item in dos:
-            with zipfile.ZipFile(item, 'r') as zip_ref:
-                lfiles = sfiles(zip_ref)
-                for fil in lfiles:
-                    zip_ref.extract(fil, clf)
-                    folder = item.replace(".zip", "")
-                    if not os.path.isdir(folder):
-                        os.makedirs(folder)
-                    shutil.move(clf + fil, folder)
-                    if os.path.isdir(f"{folder}/doc/"):
-                        shutil.rmtree(f"{folder}/doc/")
-                os.remove(item)
-
-
-def select_newer(pths: list, dco: dict):
-    """
-    Newer folders to apply the second type of unzipping
-    :param pths:
-    :param dco:
-    :return:
-    """
-    pths2 = list(set(pths).difference(set(dco.keys())))
-    pths2.sort()
-
-    pths3 = []
-
-    for pth in pths2:
-        lzip = glob.glob(f"{pth}*.zip")
-        if len(lzip) > 0:
-            pths3.append(pth)
-
-    return pths3
-
-
-def unzip_newer(fle: str):
-    """
-    Unzip method for newer folders
-    :param fle:
-    :return:
-    """
-    with zipfile.ZipFile(fle, 'r') as zip_ref:
-        lfiles = sfiles(zip_ref)
-        for fil in lfiles:
-            zip_ref.extract(fil)
-            flder = fle.replace(".zip", "")
-            shutil.move(fil, flder)
-            shutil.rmtree(f"{flder}/doc/")
-    os.remove(fle)
-
-
-def unzip():
-    os.chdir(DATA_PATH)
-
-    biblio()
 
     paths = []
     folders = os.listdir(DATA_PATH)
@@ -350,51 +34,197 @@ def unzip():
 
     paths.sort()
 
-    remove_extras(paths)
+    for path in paths:
+        list_dir = os.listdir(path)
+        rem = list(map(lambda a: re.findall(r"FR_FRCCPST36_.+", a), list_dir))
+        rem = [item for item in rem if item]
+        rem = list(map(lambda a: a[0], rem))
+        if rem:
+            for i in rem:
+                os.remove(path + i)
+
+        rem = list(map(lambda a: re.findall(r"Schema_.+", a), list_dir))
+        rem = [item for item in rem if item]
+        rem = list(map(lambda a: a[0], rem))
+        if rem:
+            for i in rem:
+                shutil.rmtree(path + i)
 
     #####################################################################################################
 
-    dico = id_fld1(paths)
+    dico = {}
+    all_files = []
+
+    for path in paths:
+        fl = []
+        lp = len(path) - 1
+        pth = path[0:lp]
+        lzip = glob.glob(f"{path}*.zip")
+        if lzip:
+            for file in lzip:
+                nfile = file.replace(path, "")
+                nfile = nfile.replace(".zip", "")
+                with zipfile.ZipFile(file, 'r') as zip_ref:
+                    lfiles = zip_ref.namelist()
+                    lfiles = [re.findall(".+\.zip", item) for item in lfiles]
+                    lfiles = [item for item in lfiles if item]
+                    lfiles = list(map(lambda a: a[0], lfiles))
+                    if lfiles:
+                        all_files.append(lfiles)
+                        fl.append({nfile: lfiles})
+            if fl:
+                dico[path] = fl
 
     clefs = list(dico.keys())
-
-    dc_doc, dc_reste, dc_multi = select_unzip(dico, clefs)
+    dc_doc = {}
+    dc_reste = {}
+    dc_multi = {}
+    for clef in clefs:
+        lis = []
+        doc = []
+        reste = []
+        multi = []
+        for dic in dico[clef]:
+            cl = list(dic.keys())[0]
+            liste = [re.sub(r"^\/", "", item).split("/")[0] for item in dic[cl]]
+            valeurs = list(set(liste))
+            if len(valeurs) == 1:
+                if valeurs[0] == "doc":
+                    doc.append(cl)
+                else:
+                    reste.append(cl)
+            else:
+                multi.append(cl)
+            if doc:
+                dc_doc[clef] = doc
+            if reste:
+                dc_reste[clef] = reste
+            if multi:
+                dc_multi[clef] = multi
 
     #####################################################################################################
 
-    dc_missing = select_missing(dico, clefs)
+    clefs = list(dico.keys())
+    dc_missing = {}
+    for clef in clefs:
+        lis = []
+        list_dir = os.listdir(clef)
+        list_dir2 = list(map(lambda a: a.replace(".zip", ""), list_dir))
+        for dic in dico[clef]:
+            cl = list(dic.keys())[0]
+            lis.append(cl)
+        mq = list(set(list_dir2).difference(set(lis)))
+        if mq:
+            dc_missing[clef] = mq
 
     #####################################################################################################
 
-    unzip_doc(dc_doc)
+    clefs = list(dc_reste.keys())
+    for clef in clefs:
+        for item in dc_reste[clef]:
+            with zipfile.ZipFile(clef + item + ".zip", 'r') as zip_ref:
+                zip_ref.extractall(clef + item)
+                fol = glob.glob(f"{clef}{item}/{item}/doc/*.zip")
+                for fl in fol:
+                    with zipfile.ZipFile(fl, 'r') as zip_ref:
+                        lfiles = zip_ref.namelist()
+                        lfiles = [re.findall(".+\d+\.xml", fl) for fl in lfiles]
+                        lfiles = [it for it in lfiles if it]
+                        lfiles = list(map(lambda a: a[0], lfiles))
+                        for fil in lfiles:
+                            zip_ref.extract(fil, clef + item)
+            cont = os.listdir(clef + item)
+            for c in cont:
+                if os.path.isdir(clef + item + "/" + c):
+                    shutil.rmtree(clef + item + "/" + c)
+                else:
+                    lfiles = [re.findall(".+\d+\.xml", fl) for fl in cont]
+                    lfiles = [it for it in lfiles if it]
+                    lfiles = list(map(lambda a: a[0], lfiles))
+                    if c not in lfiles:
+                        if os.path.isfile(c):
+                            os.remove(clef + item + "/" + c)
+                    if c == "Volumeid":
+                        os.remove(clef + item + "/" + c)
+                    if c == "index.xml":
+                        os.remove(clef + item + "/" + c)
+            os.remove(clef + item + ".zip")
 
     #####################################################################################################
 
-    unzip_reste(dc_reste)
+    clefs = list(dc_doc.keys())
+    for clef in clefs:
+        for item in dc_doc[clef]:
+            with zipfile.ZipFile(clef + item + ".zip", 'r') as zip_ref:
+                zip_ref.extractall(clef + item)
+                fol = glob.glob(f"{clef}{item}/doc/*.zip")
+                for fl in fol:
+                    with zipfile.ZipFile(fl, 'r') as zip_ref:
+                        lfiles = zip_ref.namelist()
+                        lfiles = [re.findall(".+\d+\.xml", fl) for fl in lfiles]
+                        lfiles = [it for it in lfiles if it]
+                        lfiles = list(map(lambda a: a[0], lfiles))
+                        for fil in lfiles:
+                            zip_ref.extract(fil, clef + item)
+            cont = os.listdir(clef + item)
+            for c in cont:
+                if os.path.isdir(clef + item + "/" + c):
+                    shutil.rmtree(clef + item + "/" + c)
+                else:
+                    lfiles = [re.findall(".+\d+\.xml", fl) for fl in cont]
+                    lfiles = [it for it in lfiles if it]
+                    lfiles = list(map(lambda a: a[0], lfiles))
+                    if c not in lfiles:
+                        if os.path.isfile(c):
+                            os.remove(clef + item + "/" + c)
+                    if c == "Volumeid":
+                        os.remove(clef + item + "/" + c)
+                    if c == "index.xml":
+                        os.remove(clef + item + "/" + c)
+            os.remove(clef + item + ".zip")
 
     #####################################################################################################
 
-    unzip_multi(dc_multi)
+    paths2 = list(set(paths).difference(set(dico.keys())))
+    paths2.sort()
 
-    #####################################################################################################
+    paths3 = []
 
-    unzip_missing(dc_missing)
+    for path in paths2:
+        lzip = glob.glob(f"{path}*.zip")
+        if len(lzip) > 0:
+            paths3.append(path)
 
-    #####################################################################################################
+    paths2 = paths3
 
-    paths_new = select_newer(paths, dico)
-
-    for path in paths_new:
+    for path in paths2:
         dos = glob.glob(f"{path}*.zip")
         for item in dos:
-            unzip_newer(item)
+            with zipfile.ZipFile(item, 'r') as zip_ref:
+                lfiles = zip_ref.namelist()
+                lfiles = [re.findall(".+\d+\.xml", it) for it in lfiles]
+                lfiles = [it for it in lfiles if it]
+                lfiles = list(map(lambda a: a[0], lfiles))
+                for fil in lfiles:
+                    zip_ref.extract(fil, path)
+                    folder = item.replace(".zip", "")
+                    shutil.move(path + fil, folder)
+                    shutil.rmtree(f"{folder}/doc/")
+            os.remove(item)
 
     #####################################################################################################
 
     dossiers_zip = glob.glob(f"*.zip")
 
+    def annee(file):
+        nom = file.replace(".zip", "")
+        nom = nom.split("_")
+        annee = nom[len(nom) - 2]
+
+        return annee
+
     for dos in dossiers_zip:
-        an = fan(dos)
+        an = annee(dos)
         nom = dos.replace(".zip", "")
         if an in paths:
             ldos = os.listdir(DATA_PATH + an + "/")
@@ -402,10 +232,86 @@ def unzip():
                 dossiers_zip.remove(dos)
 
     for file in dossiers_zip:
-        annee = fan(file)
-        unzip_newer(file)
+        nom = file.replace(".zip", "")
+        nom = nom.split("_")
+        annee = nom[len(nom) - 2]
+        with zipfile.ZipFile(file, 'r') as zip_ref:
+            lfiles = zip_ref.namelist()
+            lfiles = [re.findall(".+\d+\.xml", item) for item in lfiles]
+            lfiles = [item for item in lfiles if item]
+            lfiles = list(map(lambda a: a[0], lfiles))
+            for fil in lfiles:
+                zip_ref.extract(fil)
+                folder = file.replace(".zip", "")
+                shutil.move(fil, folder)
+                shutil.rmtree(f"{folder}/doc/")
+        os.remove(file)
         fannee = DATA_PATH + annee
-        folder = file.replace(".zip", "")
         if not os.path.isdir(fannee):
             os.makedirs(fannee)
         shutil.move(folder, fannee)
+
+    #####################################################################################################
+
+    clefs = list(dc_multi.keys())
+    for clef in clefs:
+        for item in dc_multi[clef]:
+            with zipfile.ZipFile(clef + item + ".zip", 'r') as zip_ref:
+                zip_ref.extractall(clef + item)
+                fol = glob.glob(f"{clef}{item}/*.zip")
+                if fol:
+                    for fl in fol:
+                        with zipfile.ZipFile(fl, 'r') as zip_ref:
+                            lfiles = zip_ref.namelist()
+                            lfiles = [re.findall(".+\d+\.xml", fl) for fl in lfiles]
+                            lfiles = [it for it in lfiles if it]
+                            lfiles = list(map(lambda a: a[0], lfiles))
+                            for fil in lfiles:
+                                zip_ref.extract(fil, clef + item)
+                        os.remove(fl)
+            if os.path.isdir(f"{clef}{item}/doc/"):
+                fol = glob.glob(f"{clef}{item}/doc/*.zip")
+                for fl in fol:
+                    with zipfile.ZipFile(fl, 'r') as zip_ref:
+                        lfiles = zip_ref.namelist()
+                        lfiles = [re.findall(".+\d+\.xml", fl) for fl in lfiles]
+                        lfiles = [it for it in lfiles if it]
+                        lfiles = list(map(lambda a: a[0], lfiles))
+                        for fil in lfiles:
+                            zip_ref.extract(fil, clef + item)
+            cont = os.listdir(clef + item)
+            for c in cont:
+                if os.path.isdir(clef + item + "/" + c):
+                    shutil.rmtree(clef + item + "/" + c)
+                else:
+                    lfiles = [re.findall(".+\d+\.xml", fl) for fl in cont]
+                    lfiles = [it for it in lfiles if it]
+                    lfiles = list(map(lambda a: a[0], lfiles))
+                    if c not in lfiles:
+                        if os.path.isfile(c):
+                            os.remove(clef + item + "/" + c)
+                    if c == "Volumeid":
+                        os.remove(clef + item + "/" + c)
+                    if c == "index.xml":
+                        os.remove(clef + item + "/" + c)
+            os.remove(clef + item + ".zip")
+
+    #####################################################################################################
+    clefs = list(dc_missing.keys())
+    for clef in clefs:
+        dos = glob.glob(f"{clef}*.zip")
+        for item in dos:
+            with zipfile.ZipFile(item, 'r') as zip_ref:
+                lfiles = zip_ref.namelist()
+                lfiles = [re.findall(".+\d+\.xml", it) for it in lfiles]
+                lfiles = [it for it in lfiles if it]
+                lfiles = list(map(lambda a: a[0], lfiles))
+                for fil in lfiles:
+                    zip_ref.extract(fil, clef)
+                    folder = item.replace(".zip", "")
+                    if not os.path.isdir(folder):
+                        os.makedirs(folder)
+                    shutil.move(clef + fil, folder)
+                    if os.path.isdir(f"{folder}/doc/"):
+                        shutil.rmtree(f"{folder}/doc/")
+                os.remove(item)
