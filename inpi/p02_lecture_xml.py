@@ -178,7 +178,6 @@ def update_db():
     liste_pn = []
     liste_app = []
     for item in dirfile["fullpath"]:
-        print(item)
         pn, appl = read_file(item)
         if len(pn) > 0:
             liste_pn.append(pn)
