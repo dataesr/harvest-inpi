@@ -3,7 +3,7 @@ import os
 from inpi import *
 
 from application.server.main.logger import get_logger
-from inpi import p00_ftp_inpi, p01_unzip_inpi
+from inpi import p00_ftp_inpi, p01_unzip_inpi, p02_lecture_xml
 
 logger = get_logger(__name__)
 
@@ -26,4 +26,6 @@ def harvest_inpi():
     logger.debug("chargement de la dernière version complète de la DB de l'INPI")
     p01_unzip_inpi.unzip()
     logger.debug("dezippage des fichiers zippés")
+    p02_lecture_xml.update_db()
+    logger.debug("chargement des données dans la table mongo")
 
