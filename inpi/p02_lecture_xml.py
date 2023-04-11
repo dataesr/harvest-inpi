@@ -153,10 +153,10 @@ def update_db():
 
     dico = {}
     dirfile = {"fullpath": []}
-    for dir in list_dir:
-        for dirpath, dirs, files in os.walk(f"{DATA_PATH}{dir}/", topdown=True):
-            if dirpath != f"{DATA_PATH}{dir}/":
-                dico[dir] = files
+    for directory in list_dir:
+        for dirpath, dirs, files in os.walk(f"{DATA_PATH}{directory}/", topdown=True):
+            if dirpath != f"{DATA_PATH}{directory}/":
+                dico[directory] = files
                 for item in files:
                     if item not in ["index.xml", "Volumeid"]:
                         flpath = dirpath + "/" + item
