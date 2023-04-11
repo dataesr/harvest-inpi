@@ -154,8 +154,8 @@ def update_db():
     dico = {}
     dirfile = {"fullpath": []}
     for dir in list_dir:
-        for dirpath, dirs, files in os.walk(f"/run/media/julia/DATA/INPI/{dir}/", topdown=True):
-            if dirpath != f"/run/media/julia/DATA/INPI/{dir}/":
+        for dirpath, dirs, files in os.walk(f"{DATA_PATH}{dir}/", topdown=True):
+            if dirpath != f"{DATA_PATH}{dir}/":
                 dico[dir] = files
                 for item in files:
                     if item not in ["index.xml", "Volumeid"]:
@@ -165,51 +165,6 @@ def update_db():
     df_files = pd.DataFrame(data=dirfile)
     df_files["file"] = df_files["fullpath"].str.split("/")
     df_files["pn"] = df_files["file"].apply(lambda a: [x.replace(".xml", "") for x in a if ".xml" in x][0])
-
-    selection = ["/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2661401.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2661401.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2661401.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_47/2661401.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2685948.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2685948.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2685948.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_23/2685948.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2688327.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2688327.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2688327.xml",
-                 "/run/media/julia/DATA/INPI/2010/FR_FRAMDST36_2010_47/2690701.xml",
-                 "/run/media/julia/DATA/INPI/2020/FR_FRNEWST36_2020_38/2690701.xml",
-                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_38/2690701.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2755307.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2755307.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2755307.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_19/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_37/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_45/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2775579.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2775579.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2775579.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_26/2873022.xml",
-                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_25/2873022.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873022.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_10/2873022.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_14/2873022.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_26/2873023.xml",
-                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_25/2873023.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873023.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_10/2873023.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_14/2873023.xml",
-                 "/run/media/julia/DATA/INPI/2010/FR_FRAMDST36_2010_15/2873038.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_30/2873038.xml",
-                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_31/2873038.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873038.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_31/2873038.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_30/2873038.xml"]
-
-    dirfile2 = {"fullpath": selection}
 
     client = MongoClient('mongodb://localhost:27017/')
 
@@ -222,7 +177,7 @@ def update_db():
 
     liste_pn = []
     liste_app = []
-    for item in dirfile2["fullpath"]:
+    for item in dirfile["fullpath"]:
         print(item)
         pn, appl = read_file(item)
         if len(pn) > 0:
