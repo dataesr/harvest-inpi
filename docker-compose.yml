@@ -24,7 +24,7 @@ services:
       APP_SETTINGS: application.server.config.DevelopmentConfig
       MOUNTED_VOLUME_TEST: '/volume_inpi/'
     volumes:
-      - /run/media/julia/DATA/INPI/:/volume_test
+      - /run/media/julia/DATA/INPI/:/volume_inpi
     networks:
       - inpi-network
     depends_on:
@@ -41,7 +41,7 @@ services:
       APP_SETTINGS: application.server.config.DevelopmentConfig
       MOUNTED_VOLUME_TEST: '/volume_inpi/'
     volumes:
-      - /run/media/julia/DATA/INPI/:/volume_test
+      - /run/media/julia/DATA/INPI/:/volume_inpi
     networks:
       - inpi-network
     depends_on:
@@ -52,5 +52,5 @@ networks:
     driver: bridge
 
 volumes:
-  volume_test:
+  volume_inpi:
 
