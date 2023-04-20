@@ -26,6 +26,6 @@ def harvest_inpi():
     logger.debug("chargement de la dernière version complète de la DB de l'INPI")
     p01_unzip_inpi.unzip()
     logger.debug("dezippage des fichiers zippés")
-    p02_lecture_xml.update_db()
-    logger.debug("chargement des données dans la table mongo")
+    # p02_lecture_xml.update_db()
+    # logger.debug("chargement des données dans la table mongo")
 
