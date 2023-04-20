@@ -165,8 +165,15 @@ def loading():
 
     rest_years2 = remove_zip(rest_years)
 
-    for item in rest_years2:
-        if item not in rest_present:
-            loading_file(ftp_server, item + ".zip")
+    anmax = max(present)
+    if not rest_present:
+        for nom in rest_years2:
+            if nom not in os.listdir(f"{DATA_PATH}{anmax}"):
+                print(nom)
+                loading_file(ftp_server, nom + ".zip")
+    else:
+        for item in rest_years2:
+            if item in rest_present:
+                loading_file(ftp_server, item + ".zip")
 
     ftp_server.quit()
