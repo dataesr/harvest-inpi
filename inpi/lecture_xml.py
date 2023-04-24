@@ -56,7 +56,7 @@ def date_pub_ref(lmf, ptdoc):
 def doc_nb(lmf, ptdoc):
     global pb_n
     if "doc-number" in ptdoc.attrs.keys():
-        pb_n = int(ptdoc["doc-number"])
+        pb_n = ptdoc["doc-number"]
     else:
         for item in lmf:
             if ".xml" in item:
@@ -299,7 +299,7 @@ def errata_list(bs, dic_er):
                 dic_er[clef] = item.find(clef).text
             if "date" in tags_item:
                 dic_er["date-errata"] = datetime.strptime(item.find("date").text,
-                                                              "%Y%m%d").date().isoformat()
+                                                          "%Y%m%d").date().isoformat()
             part = ""
             if "1" in dic_er["text"]:
                 part = "1"
@@ -384,6 +384,72 @@ def app_ref(bs, pb_n, ptdoc):
         lste_appref.append(dic_apref)
 
     return lste_appref
+
+
+def cit_list(bs, dic_citref):
+    lste_cit = []
+
+    cit_ref = bs.find_all("references-cited")
+
+    if cit_ref:
+        for item in cit_ref:
+            clefs_citref = list(dic_citref)
+            tags_item = [tag.name for tag in item.find_all()]
+            inter = list(set(clefs_citref).intersection(set(tags_item)))
+            for clef in inter:
+                dic_citref[clef] = item.find(clef).text
+            for clef in tags_item:
+                if clef in ["patcit", "nplcit"]:
+                    dic_citref["type-citation"] = clef
+            if "text" in tags_item:
+                dic_citref["citation"] = item.find("text").text
+            if "rel-claims" in tags_item:
+                dic_citref["claims"] = item.find("rel-claims").text
+            if "date" in tags_item:
+                dic_citref["date-doc"] = datetime.strptime(item.find("date").text,
+                                                           "%Y%m%d").date().isoformat()
+
+            lste_cit.append(dic_citref)
+    else:
+        lste_cit.append(dic_citref)
+
+    return lste_cit
+
+
+def prio_list(bs, pn_b, ptdoc):
+    lste_prio = []
+
+    prio_ref = bs.find_all("fr-priority-claim")
+    print(prio_ref)
+
+    if prio_ref:
+        for item in prio_ref:
+            dic_prio = {"sequence": "",
+                              "country": "",
+                              "kind": "",
+                              "priority-number": "",
+                              "date-priority": "",
+                              "application-number-fr": ptdoc["id"],
+                              "publication-number": pn_b}
+            clefs_prioref = list(dic_prio)
+            tags_item = [tag.name for tag in item.find_all()]
+            inter = list(set(clefs_prioref).intersection(set(tags_item)))
+            if "sequence" in item.attrs.keys():
+                dic_prio["sequence"] = item["sequence"]
+            if "kind" in item.attrs.keys():
+                dic_prio["kind"] = item["kind"]
+            for clef in inter:
+                dic_prio[clef] = item.find(clef).text
+            if "doc-number" in tags_item:
+                dic_prio["priority-number"] = item.find("doc-number").text
+            if "date" in tags_item:
+                dic_prio["date-priority"] = datetime.strptime(item.find("date").text,
+                                                         "%Y%m%d").date().isoformat()
+
+            lste_prio.append(dic_prio)
+            print(dic_prio)
+
+    return lste_prio
 
 
 # def read_file(file):
@@ -504,67 +570,67 @@ def update_db():
     list_dir = os.listdir(DATA_PATH)
     list_dir.sort()
 
-    dico = {}
-    dirfile = {"fullpath": []}
-    for dir in list_dir:
-        for dirpath, dirs, files in os.walk(f"/run/media/julia/DATA/INPI/{dir}/", topdown=True):
-            if dirpath != f"/run/media/julia/DATA/INPI/{dir}/":
-                nb_files = round(len(files) * 0.001)
-                sp_files = random.sample(files, nb_files)
-                dico[dir] = sp_files
-                for item in sp_files:
-                    if item not in ["index.xml", "Volumeid"]:
-                        flpath = dirpath + "/" + item
-                        dirfile["fullpath"].append(flpath)
-
-    df_files = pd.DataFrame(data=dirfile)
-    df_files["file"] = df_files["fullpath"].str.split("/")
-    df_files["pn"] = df_files["file"].apply(lambda a: [x.replace(".xml", "") for x in a if ".xml" in x][0])
-
-    # selection = ["/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2661401.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2661401.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2661401.xml",
-    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_47/2661401.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2685948.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2685948.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2685948.xml",
-    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_23/2685948.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2688327.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2688327.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2688327.xml",
-    #              "/run/media/julia/DATA/INPI/2010/FR_FRAMDST36_2010_47/2690701.xml",
-    #              "/run/media/julia/DATA/INPI/2020/FR_FRNEWST36_2020_38/2690701.xml",
-    #              "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_38/2690701.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2755307.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2755307.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2755307.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2769229.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2769229.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2769229.xml",
-    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_19/2769229.xml",
-    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_37/2769229.xml",
-    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_45/2769229.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2775579.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2775579.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2775579.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_26/2873022.xml",
-    #              "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_25/2873022.xml",
-    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873022.xml",
-    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_10/2873022.xml",
-    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_14/2873022.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_26/2873023.xml",
-    #              "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_25/2873023.xml",
-    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873023.xml",
-    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_10/2873023.xml",
-    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_14/2873023.xml",
-    #              "/run/media/julia/DATA/INPI/2010/FR_FRAMDST36_2010_15/2873038.xml",
-    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_30/2873038.xml",
-    #              "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_31/2873038.xml",
-    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873038.xml",
-    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_31/2873038.xml",
-    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_30/2873038.xml"]
+    # dico = {}
+    # dirfile = {"fullpath": []}
+    # for dir in list_dir:
+    #     for dirpath, dirs, files in os.walk(f"/run/media/julia/DATA/INPI/{dir}/", topdown=True):
+    #         if dirpath != f"/run/media/julia/DATA/INPI/{dir}/":
+    #             nb_files = round(len(files) * 0.001)
+    #             sp_files = random.sample(files, nb_files)
+    #             dico[dir] = sp_files
+    #             for item in sp_files:
+    #                 if item not in ["index.xml", "Volumeid"]:
+    #                     flpath = dirpath + "/" + item
+    #                     dirfile["fullpath"].append(flpath)
     #
-    # dirfile2 = {"fullpath": selection}
+    # df_files = pd.DataFrame(data=dirfile)
+    # df_files["file"] = df_files["fullpath"].str.split("/")
+    # df_files["pn"] = df_files["file"].apply(lambda a: [x.replace(".xml", "") for x in a if ".xml" in x][0])
+
+    selection = ["/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2661401.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2661401.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2661401.xml",
+                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_47/2661401.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2685948.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2685948.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2685948.xml",
+                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_23/2685948.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2688327.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2688327.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2688327.xml",
+                 "/run/media/julia/DATA/INPI/2010/FR_FRAMDST36_2010_47/2690701.xml",
+                 "/run/media/julia/DATA/INPI/2020/FR_FRNEWST36_2020_38/2690701.xml",
+                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_38/2690701.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2755307.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2755307.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2755307.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2769229.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2769229.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2769229.xml",
+                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_19/2769229.xml",
+                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_37/2769229.xml",
+                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_45/2769229.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2775579.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2775579.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2775579.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_26/2873022.xml",
+                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_25/2873022.xml",
+                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873022.xml",
+                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_10/2873022.xml",
+                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_14/2873022.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_26/2873023.xml",
+                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_25/2873023.xml",
+                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873023.xml",
+                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_10/2873023.xml",
+                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_14/2873023.xml",
+                 "/run/media/julia/DATA/INPI/2010/FR_FRAMDST36_2010_15/2873038.xml",
+                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_30/2873038.xml",
+                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_31/2873038.xml",
+                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873038.xml",
+                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_31/2873038.xml",
+                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_30/2873038.xml"]
+
+    dirfile2 = {"fullpath": selection}
 
     client = MongoClient('mongodb://localhost:27017/')
 
@@ -605,6 +671,10 @@ def update_db():
 
     amended = db.amended
 
+    citations = db.citations
+
+    priorities = db.priorities
+
     liste_pn = []
     liste_app = []
     liste_pbref = []
@@ -621,7 +691,9 @@ def update_db():
     liste_ins = []
     liste_search = []
     liste_amended = []
-    for file in dirfile["fullpath"]:
+    liste_citation = []
+    liste_priority = []
+    for file in dirfile2["fullpath"]:
         print(file)
         with open(file, "r") as f:
             data = f.read()
@@ -760,10 +832,28 @@ def update_db():
                 sear = search_list(ptlife, pub_n, pn)
 
                 dic_amended = {"publication-number": pub_n,
-                              "claims": "",
-                              "application-number": pn["id"]}
+                               "claims": "",
+                               "application-number": pn["id"]}
 
                 amend = amended_list(ptlife, dic_amended)
+
+                dic_citations = {"type-citation": "",
+                                 "citation": "",
+                                 "country": "",
+                                 "doc-number": "",
+                                 "date-doc": "",
+                                 "passage": "",
+                                 "category": "",
+                                 "claims": "",
+                                 "application-number-fr": pn["id"],
+                                 "publication-number": pub_n}
+
+                cit = cit_list(ptlife, dic_citations)
+
+
+
+                prio = prio_list(bs_data, pub_n, pn)
+
 
         else:
             dic_pn = {}
@@ -782,6 +872,8 @@ def update_db():
             ins = []
             sear = []
             amend = []
+            cit = []
+            prio = []
 
         if len(dic_pn) > 0:
             liste_pn.append(dic_pn)
@@ -1132,7 +1224,6 @@ def update_db():
                                     nwval = {"$set": {k: ser[k]}}
                                     x = search.update_many(qr, nwval, upsert=True)
 
-
         if len(amend) > 0:
             liste_amended.append(amend)
             for ame in amend:
@@ -1158,116 +1249,196 @@ def update_db():
                                     nwval = {"$set": {k: ame[k]}}
                                     x = amended.update_many(qr, nwval, upsert=True)
 
+        if len(cit) > 0:
+            liste_citation.append(cit)
+            for ct in cit:
+                qr = {"publication-number": ct["publication-number"],
+                      "application-number-fr": ct["application-number-fr"],
+                      "type-citation": ct["type-citation"],
+                      "citation": ct["citation"],
+                      "country": ct["country"],
+                      "doc-number": ct["doc-number"],
+                      "date-doc": ct["date-doc"],
+                      "passage": ct["passage"],
+                      "category": ct["category"],
+                      "claims": ct["claims"]
+                      }
+                mydoc = list(citations.find(qr))
+                if len(mydoc) == 0:
+                    cit_id = citations.insert_one(ct).inserted_id
+                else:
+                    for res in mydoc:
+                        diff = DeepDiff(res, ct)
+                        if len(diff) > 0:
+                            if "values_changed" in diff.keys():
+                                d = diff["values_changed"]
+                                ks = list(d.keys())
+                                tks = []
+                                for k in ks:
+                                    k = k.replace("root['", "")
+                                    k = k.replace("']", "")
+                                    tks.append(k)
+
+                                for k in tks:
+                                    nwval = {"$set": {k: ct[k]}}
+                                    x = citations.update_many(qr, nwval, upsert=True)
+
+        if len(prio) > 0:
+            liste_priority.append(prio)
+            for pri in prio:
+                print(pri)
+                qr = {"publication-number": pri["publication-number"],
+                      "application-number-fr": pri["application-number-fr"],
+                      "sequence": pri["sequence"],
+                      "country": pri["country"],
+                      "kind": pri["kind"],
+                      "priority-number": pri["priority-number"],
+                      "date-priority": pri["date-priority"]
+                      }
+                mydoc = list(priorities.find(qr))
+                if len(mydoc) == 0:
+                    prio_id = priorities.insert_one(pri).inserted_id
+                else:
+                    for res in mydoc:
+                        diff = DeepDiff(res, pri)
+                        if len(diff) > 0:
+                            if "values_changed" in diff.keys():
+                                d = diff["values_changed"]
+                                ks = list(d.keys())
+                                tks = []
+                                for k in ks:
+                                    k = k.replace("root['", "")
+                                    k = k.replace("']", "")
+                                    tks.append(k)
+
+                                for k in tks:
+                                    nwval = {"$set": {k: pri[k]}}
+                                    x = priorities.update_many(qr, nwval, upsert=True)
+
     liste_pub = []
     for document in publications.find():
         liste_pub.append(document)
-        print(document)
+        # print(document)
 
     df_pub = pd.DataFrame(liste_pub)
 
     liste_applicants = []
     for document in personref.find():
         liste_applicants.append(document)
-        print(document)
+        # print(document)
 
     df_app = pd.DataFrame(liste_applicants)
 
     liste_pubref = []
     for document in publicationref.find():
         liste_pubref.append(document)
-        print(document)
+        # print(document)
 
     df_pubref = pd.DataFrame(liste_pubref)
 
     liste_appref = []
     for document in applicationref.find():
         liste_appref.append(document)
-        print(document)
+        # print(document)
 
     df_appref = pd.DataFrame(liste_appref)
 
     liste_ext = []
     for document in extensionpublications.find():
         liste_ext.append(document)
-        print(document)
+        # print(document)
 
     df_ext = pd.DataFrame(liste_ext)
 
     liste_ta = []
     for document in titleabstract.find():
         liste_ta.append(document)
-        print(document)
+        # print(document)
 
     df_ta = pd.DataFrame(liste_ta)
 
     liste_gr = []
     for document in grant.find():
         liste_gr.append(document)
-        print(document)
+        # print(document)
 
     df_gr = pd.DataFrame(liste_gr)
 
     liste_rf = []
     for document in refusal.find():
         liste_rf.append(document)
-        print(document)
+        # print(document)
 
     df_rf = pd.DataFrame(liste_rf)
 
     liste_wid = []
     for document in withdrawal.find():
         liste_wid.append(document)
-        print(document)
+        # print(document)
 
     df_wid = pd.DataFrame(liste_wid)
 
     liste_lps = []
     for document in lapsed.find():
         liste_lps.append(document)
-        print(document)
+        # print(document)
 
     df_lps = pd.DataFrame(liste_lps)
 
     liste_sts = []
     for document in status.find():
         liste_sts.append(document)
-        print(document)
+        # print(document)
 
     df_status = pd.DataFrame(liste_sts)
 
     liste_rnw = []
     for document in renewal.find():
         liste_rnw.append(document)
-        print(document)
+        # print(document)
 
     df_rnw = pd.DataFrame(liste_rnw)
 
     liste_err = []
     for document in errata.find():
         liste_err.append(document)
-        print(document)
+        # print(document)
 
     df_err = pd.DataFrame(liste_err)
 
     liste_inscriptions = []
     for document in inscription.find():
         liste_inscriptions.append(document)
-        print(document)
+        # print(document)
 
     df_ins = pd.DataFrame(liste_inscriptions)
 
     liste_search = []
     for document in search.find():
         liste_search.append(document)
-        print(document)
+        # print(document)
 
     df_search = pd.DataFrame(liste_search)
 
     liste_amend = []
     for document in amended.find():
         liste_amend.append(document)
-        print(document)
+        # print(document)
 
     df_amended = pd.DataFrame(liste_amend)
+
+    liste_cit = []
+    for document in citations.find():
+        liste_cit.append(document)
+        # print(document)
+
+    df_citations = pd.DataFrame(liste_cit)
+
+    liste_prio = []
+    for document in priorities.find():
+        liste_prio.append(document)
+        # print(document)
+
+    df_prio = pd.DataFrame(liste_prio)
 
     client.close()
