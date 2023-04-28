@@ -13,19 +13,30 @@ DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 
 def unzip():
+    """
+    We keep only the XML files with information on patent, no CCP, no schema, no drawing...
+    Across time, folder and file structures have evolved. This means that the unzipping process needs to take into these
+    changes; some files are directly inside a weekly folder, some are inside a folder with no weekly information,
+    some are inside another folder named doc...
+    :return:
+    """
     os.chdir(DATA_PATH)
 
+    # list all the folders
     list_dir = os.listdir(DATA_PATH)
+    # remove .zip from the name of the folders and get a list of the unique names
     list_dir = list(set(map(lambda a: re.sub(r"\.zip", "", a), list_dir)))
     list_dir.sort()
     dir2 = os.listdir(DATA_PATH)
 
+    # unzip data pre-2017 if not already done
     if 'Biblio_FR_Stock.tar' in list_dir:
         my_tar = tarfile.open('Biblio_FR_Stock.tar')
         my_tar.extractall('.')
         my_tar.close()
         os.remove('Biblio_FR_Stock.tar')
 
+    # get all the full data paths
     paths = []
     folders = os.listdir(DATA_PATH)
     for folder in folders:
@@ -34,6 +45,7 @@ def unzip():
 
     paths.sort()
 
+    # remove CCP and schemas from paths
     for path in paths:
         list_dir = os.listdir(path)
         rem = list(map(lambda a: re.findall(r"FR_FRCCPST36_.+", a), list_dir))
@@ -52,6 +64,7 @@ def unzip():
 
     #####################################################################################################
 
+    # get all the files available inside the zipped folders and put them into a dictionary with year as a key
     dico = {}
     all_files = []
 
@@ -75,6 +88,9 @@ def unzip():
             if fl:
                 dico[path] = fl
 
+    # for each full path by year, check which strategy is better suited to unzip the files
+    # if single structure, doc folder present and doc folder at first position, file goes into dc_doc, if not, dc_reste
+    # if multi structures, the file goes into dc_multi
     clefs = list(dico.keys())
     dc_doc = {}
     dc_reste = {}
@@ -104,6 +120,7 @@ def unzip():
 
     #####################################################################################################
 
+    # dc_missing for files that not already in dc_doc, dc_reste and dc_multi
     clefs = list(dico.keys())
     dc_missing = {}
     for clef in clefs:
@@ -119,6 +136,7 @@ def unzip():
 
     #####################################################################################################
 
+    # unzip files in dc_reste, only the XML we are interested in, by checking the name list inside the zipped folder
     clefs = list(dc_reste.keys())
     for clef in clefs:
         for item in dc_reste[clef]:
@@ -152,6 +170,7 @@ def unzip():
 
     #####################################################################################################
 
+    # unzip files in dc_doc, only the XML we are interested in, by checking the name list inside the zipped folder
     clefs = list(dc_doc.keys())
     for clef in clefs:
         for item in dc_doc[clef]:
@@ -185,6 +204,7 @@ def unzip():
 
     #####################################################################################################
 
+    # check which year folders are missing in the dictionary with full paths by year
     paths2 = list(set(paths).difference(set(dico.keys())))
     paths2.sort()
 
@@ -197,6 +217,7 @@ def unzip():
 
     paths2 = paths3
 
+    # unzip the files inside these folders
     for path in paths2:
         dos = glob.glob(f"{path}*.zip")
         for item in dos:
@@ -214,6 +235,7 @@ def unzip():
 
     #####################################################################################################
 
+    # unzip the files inside weekly folders and put the weekly folders inside a year folder
     dossiers_zip = glob.glob(f"*.zip")
 
     def annee(file):
@@ -253,6 +275,7 @@ def unzip():
 
     #####################################################################################################
 
+    # unzip the files in dc_multi
     clefs = list(dc_multi.keys())
     for clef in clefs:
         for item in dc_multi[clef]:
@@ -297,6 +320,8 @@ def unzip():
             os.remove(clef + item + ".zip")
 
     #####################################################################################################
+
+    # unzip files in dc_missing
     clefs = list(dc_missing.keys())
     for clef in clefs:
         dos = glob.glob(f"{clef}*.zip")

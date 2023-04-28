@@ -7,6 +7,7 @@ import re
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+# DATA_PATH = "/run/media/julia/DATA/INPI/"
 
 
 def _is_ftp_dir(ftp_handle, name, guess_by_extension=True):
@@ -128,27 +129,34 @@ def loading_file(ftp_handle, file):
 
 def loading():
     os.chdir(DATA_PATH)
+    # check which directories are already present
     present = os.listdir()
 
+    # connect to the FTP server
     ftp_server = ftplib.FTP('www.inpi.net', os.getenv('USERNAME_INPI'), os.getenv('PWD_INPI'))
 
+    # list all the elements available
     liste = []
     ftp_server.retrlines('LIST', liste.append)
 
     files = ftp_server.nlst()
 
+    # keep only the yearly forlders
     year_list = list_files(r"^\d{4}$", files)
 
+    # select which folders to load by comparing what we already have and what is available on the server
     year_load = []
     for item in year_list:
         if item not in present:
             year_load.append(item)
 
+    # load the folders we are interested in
     if len(year_load) > 0:
         for i in year_load:
             download_ftp_tree(ftp_server, i, f"{DATA_PATH}", pattern=None, overwrite=False,
                               guess_by_extension=True)
 
+    # load the folder with data prior 2017
     pre_2017 = []
     for i in range(2010, 2017):
         if str(i) not in present:
@@ -158,6 +166,7 @@ def loading():
         biblio = list_files(r"^Biblio.+", files)[0]
         loading_file(ftp_server, biblio)
 
+    # select files that start with FR_FR (current year usually - folders by week)
     rest_years = list_files(r"^FR_FR.+", files)
 
     rest_present = list_files(r"^FR_FR.+", present)
@@ -165,15 +174,43 @@ def loading():
 
     rest_years2 = remove_zip(rest_years)
 
-    anmax = max(present)
-    if not rest_present:
-        for nom in rest_years2:
-            if nom not in os.listdir(f"{DATA_PATH}{anmax}"):
-                print(nom)
-                loading_file(ftp_server, nom + ".zip")
+    # load them if we don't already have them in the folder from the closest year
+
+    global annee
+
+    if rest_years2:
+        annee = max(list(set(list_files(r"\d{4}", rest_years2))))
+
+    global anmax
+    if present:
+        anmax = max(present)
+    if "anmax" in globals():
+        if not rest_present:
+            if rest_years2:
+                for nom in rest_years2:
+                    if nom not in os.listdir(f"{DATA_PATH}{anmax}"):
+                        print(nom)
+                        loading_file(ftp_server, nom + ".zip")
+        else:
+            if rest_years2:
+                for item in rest_years2:
+                    if item in rest_present:
+                        loading_file(ftp_server, item + ".zip")
     else:
-        for item in rest_years2:
-            if item in rest_present:
-                loading_file(ftp_server, item + ".zip")
+        if not rest_present:
+            if rest_years2:
+                for nom in rest_years2:
+                    if os.path.exists(f"{DATA_PATH}{annee}"):
+                        if nom not in os.listdir(f"{DATA_PATH}{annee}"):
+                            print(nom)
+                            loading_file(ftp_server, nom + ".zip")
+                    else:
+                        loading_file(ftp_server, nom + ".zip")
+        else:
+            if rest_years2:
+                for item in rest_years2:
+                    if item in rest_present:
+                        loading_file(ftp_server, item + ".zip")
+
 
     ftp_server.quit()
