@@ -25,6 +25,8 @@ services:
       MOUNTED_VOLUME_TEST: '/volume_inpi/'
     volumes:
       - /run/media/julia/DATA/INPI/:/volume_inpi
+    env_file:
+      - .env
     networks:
       - inpi-network
     depends_on:
@@ -42,6 +44,8 @@ services:
       MOUNTED_VOLUME_TEST: '/volume_inpi/'
     volumes:
       - /run/media/julia/DATA/INPI/:/volume_inpi
+    env_file:
+      - .env
     networks:
       - inpi-network
     depends_on:
