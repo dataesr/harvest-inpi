@@ -1,7 +1,7 @@
 import os
 
 from application.server.main.logger import get_logger
-from inpi import p00_ftp_inpi, p01_unzip_inpi, p02_populate_inpixlms
+from inpi import p00_ftp_inpi, p01_unzip_inpi
 
 logger = get_logger(__name__)
 
@@ -23,7 +23,5 @@ def harvest_inpi():
     p00_ftp_inpi.loading()
     logger.debug("chargement de la dernière version complète de la DB de l'INPI")
     p01_unzip_inpi.unzip()
-    logger.debug("dezippage des fichiers zippés")
-    p02_populate_inpixlms.upload_files()
-    logger.debug("chargement des données dans ObjectStorage")
+    logger.debug("dezippage des fichiers zippés et chargement dans ObjectStorage")
 
