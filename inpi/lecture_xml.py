@@ -9,7 +9,7 @@ from deepdiff import DeepDiff
 import pandas as pd
 import random
 
-random.seed(42)
+random.seed(1)
 
 DATA_PATH = "/run/media/julia/DATA/INPI/"
 
@@ -420,17 +420,16 @@ def prio_list(bs, pn_b, ptdoc):
     lste_prio = []
 
     prio_ref = bs.find_all("fr-priority-claim")
-    print(prio_ref)
 
     if prio_ref:
         for item in prio_ref:
             dic_prio = {"sequence": "",
-                              "country": "",
-                              "kind": "",
-                              "priority-number": "",
-                              "date-priority": "",
-                              "application-number-fr": ptdoc["id"],
-                              "publication-number": pn_b}
+                        "country": "",
+                        "kind": "",
+                        "priority-number": "",
+                        "date-priority": "",
+                        "application-number-fr": ptdoc["id"],
+                        "publication-number": pn_b}
             clefs_prioref = list(dic_prio)
             tags_item = [tag.name for tag in item.find_all()]
             inter = list(set(clefs_prioref).intersection(set(tags_item)))
@@ -444,12 +443,45 @@ def prio_list(bs, pn_b, ptdoc):
                 dic_prio["priority-number"] = item.find("doc-number").text
             if "date" in tags_item:
                 dic_prio["date-priority"] = datetime.strptime(item.find("date").text,
-                                                         "%Y%m%d").date().isoformat()
+                                                              "%Y%m%d").date().isoformat()
 
             lste_prio.append(dic_prio)
-            print(dic_prio)
 
     return lste_prio
+
+
+def redoc_list(bs, pb_n, ptdoc):
+    rdc_ref = bs.find_all("related-documents")
+    lste_rdc = []
+
+    if rdc_ref:
+        for item in rdc_ref:
+            dc_rdc = {"type-related-doc": "",
+                      "country": "",
+                      "doc-number": "",
+                      "date-document": "",
+                      "application-number-fr": ptdoc["id"],
+                      "publication-number": pb_n}
+
+            clefs_rdc = list(dc_rdc)
+            tags_item = [tag.name for tag in item.find_all()]
+            inter = list(set(clefs_rdc).intersection(set(tags_item)))
+            for clef in inter:
+                dc_rdc[clef] = item.find(clef).text
+            if "division" and "parent-doc" in tags_item:
+                dc_rdc["type-related-doc"] = "division de"
+            elif "division" and "child-doc" in tags_item:
+                dc_rdc["type-related-doc"] = "a pour division"
+            elif "name" in tags_item:
+                dc_rdc["type-related-doc"] = "CCP rattaché"
+            elif "utility-model-basis" and "parent-doc" in tags_item:
+                dc_rdc["type-related-doc"] = "transformation volontaire du brevet en certificat d\'utilité"
+            elif "date" in tags_item:
+                dc_rdc["date-document"] = datetime.strptime(item.find("date").text,
+                                                              "%Y%m%d").date().isoformat()
+            lste_rdc.append(dc_rdc)
+
+    return lste_rdc
 
 
 # def read_file(file):
@@ -570,67 +602,67 @@ def update_db():
     list_dir = os.listdir(DATA_PATH)
     list_dir.sort()
 
-    # dico = {}
-    # dirfile = {"fullpath": []}
-    # for dir in list_dir:
-    #     for dirpath, dirs, files in os.walk(f"/run/media/julia/DATA/INPI/{dir}/", topdown=True):
-    #         if dirpath != f"/run/media/julia/DATA/INPI/{dir}/":
-    #             nb_files = round(len(files) * 0.001)
-    #             sp_files = random.sample(files, nb_files)
-    #             dico[dir] = sp_files
-    #             for item in sp_files:
-    #                 if item not in ["index.xml", "Volumeid"]:
-    #                     flpath = dirpath + "/" + item
-    #                     dirfile["fullpath"].append(flpath)
+    dico = {}
+    dirfile = {"fullpath": []}
+    for dir in list_dir:
+        for dirpath, dirs, files in os.walk(f"/run/media/julia/DATA/INPI/{dir}/", topdown=True):
+            if dirpath != f"/run/media/julia/DATA/INPI/{dir}/":
+                nb_files = round(len(files) * 0.001)
+                sp_files = random.sample(files, nb_files)
+                dico[dir] = sp_files
+                for item in sp_files:
+                    if item not in ["index.xml", "Volumeid"]:
+                        flpath = dirpath + "/" + item
+                        dirfile["fullpath"].append(flpath)
+
+    df_files = pd.DataFrame(data=dirfile)
+    df_files["file"] = df_files["fullpath"].str.split("/")
+    df_files["pn"] = df_files["file"].apply(lambda a: [x.replace(".xml", "") for x in a if ".xml" in x][0])
+
+    # selection = ["/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2661401.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2661401.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2661401.xml",
+    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_47/2661401.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2685948.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2685948.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2685948.xml",
+    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_23/2685948.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2688327.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2688327.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2688327.xml",
+    #              "/run/media/julia/DATA/INPI/2010/FR_FRAMDST36_2010_47/2690701.xml",
+    #              "/run/media/julia/DATA/INPI/2020/FR_FRNEWST36_2020_38/2690701.xml",
+    #              "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_38/2690701.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2755307.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2755307.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2755307.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2769229.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2769229.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2769229.xml",
+    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_19/2769229.xml",
+    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_37/2769229.xml",
+    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_45/2769229.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2775579.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2775579.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2775579.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_26/2873022.xml",
+    #              "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_25/2873022.xml",
+    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873022.xml",
+    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_10/2873022.xml",
+    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_14/2873022.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_26/2873023.xml",
+    #              "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_25/2873023.xml",
+    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873023.xml",
+    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_10/2873023.xml",
+    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_14/2873023.xml",
+    #              "/run/media/julia/DATA/INPI/2010/FR_FRAMDST36_2010_15/2873038.xml",
+    #              "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_30/2873038.xml",
+    #              "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_31/2873038.xml",
+    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873038.xml",
+    #              "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_31/2873038.xml",
+    #              "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_30/2873038.xml"]
     #
-    # df_files = pd.DataFrame(data=dirfile)
-    # df_files["file"] = df_files["fullpath"].str.split("/")
-    # df_files["pn"] = df_files["file"].apply(lambda a: [x.replace(".xml", "") for x in a if ".xml" in x][0])
-
-    selection = ["/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2661401.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2661401.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2661401.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_47/2661401.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2685948.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2685948.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2685948.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_23/2685948.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2688327.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2688327.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2688327.xml",
-                 "/run/media/julia/DATA/INPI/2010/FR_FRAMDST36_2010_47/2690701.xml",
-                 "/run/media/julia/DATA/INPI/2020/FR_FRNEWST36_2020_38/2690701.xml",
-                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_38/2690701.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2755307.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2755307.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2755307.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_19/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_37/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_45/2769229.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_41/2775579.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_42/2775579.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRAMDST36_2019_48/2775579.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_26/2873022.xml",
-                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_25/2873022.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873022.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_10/2873022.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_14/2873022.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_26/2873023.xml",
-                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_25/2873023.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873023.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_10/2873023.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_14/2873023.xml",
-                 "/run/media/julia/DATA/INPI/2010/FR_FRAMDST36_2010_15/2873038.xml",
-                 "/run/media/julia/DATA/INPI/2019/FR_FRNEWST36_2019_30/2873038.xml",
-                 "/run/media/julia/DATA/INPI/2020/FR_FRAMDST36_2020_31/2873038.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_04/2873038.xml",
-                 "/run/media/julia/DATA/INPI/2021/FR_FRAMDST36_2021_31/2873038.xml",
-                 "/run/media/julia/DATA/INPI/2022/FR_FRAMDST36_2022_30/2873038.xml"]
-
-    dirfile2 = {"fullpath": selection}
+    # dirfile2 = {"fullpath": selection}
 
     client = MongoClient('mongodb://localhost:27017/')
 
@@ -641,15 +673,15 @@ def update_db():
 
     publications = db.publications
 
-    personref = db.personref
+    personRef = db.personRef
 
-    publicationref = db.publicationref
+    publicationRef = db.publicationRef
 
-    applicationref = db.applicationref
+    applicationRef = db.applicationRef
 
-    extensionpublications = db.extensionpublications
+    extensionPublications = db.extensionPublications
 
-    titleabstract = db.titleabstract
+    titleAbstract = db.titleAbstract
 
     grant = db.grant
 
@@ -657,7 +689,7 @@ def update_db():
 
     withdrawal = db.withdrawal
 
-    lapsed = db.lapsed
+    notificationLapsed = db.notificationLapsed
 
     status = db.status
 
@@ -665,15 +697,17 @@ def update_db():
 
     errata = db.errata
 
-    inscription = db.inscription
+    inscriptionPublications = db.inscriptionPublications
 
-    search = db.search
+    searchPublications = db.searchPublications
 
-    amended = db.amended
+    amendedClaims = db.amendedClaims
 
-    citations = db.citations
+    citationPublications = db.citationPublications
 
-    priorities = db.priorities
+    priorityPublications = db.priorityPublications
+    
+    relatedDocuments = db.relatedDocuments
 
     liste_pn = []
     liste_app = []
@@ -693,7 +727,8 @@ def update_db():
     liste_amended = []
     liste_citation = []
     liste_priority = []
-    for file in dirfile2["fullpath"]:
+    liste_redoc = []
+    for file in dirfile["fullpath"]:
         print(file)
         with open(file, "r") as f:
             data = f.read()
@@ -850,9 +885,9 @@ def update_db():
 
                 cit = cit_list(ptlife, dic_citations)
 
-
-
                 prio = prio_list(bs_data, pub_n, pn)
+
+                redoc = redoc_list(bs_data, pub_n, pn)
 
 
         else:
@@ -874,6 +909,8 @@ def update_db():
             amend = []
             cit = []
             prio = []
+            redoc = []
+            
 
         if len(dic_pn) > 0:
             liste_pn.append(dic_pn)
@@ -909,9 +946,9 @@ def update_db():
                       "middle-name": app["middle-name"],
                       "last-name": app["last-name"],
                       "orgname": app["orgname"]}
-                mydoc = list(personref.find(qr))
+                mydoc = list(personRef.find(qr))
                 if len(mydoc) == 0:
-                    app_id = personref.insert_one(app).inserted_id
+                    app_id = personRef.insert_one(app).inserted_id
                 else:
                     for res in mydoc:
                         diff = DeepDiff(res, app)
@@ -927,7 +964,7 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: app[k]}}
-                                    x = personref.update_many(qr, nwval, upsert=True)
+                                    x = personRef.update_many(qr, nwval, upsert=True)
 
         if len(pref) > 0:
             liste_pbref.append(pref)
@@ -937,7 +974,7 @@ def update_db():
                       "data-format-publication": pr["data-format-publication"], "kind": pr["kind"],
                       "nature": pr["nature"],
                       "date-publication": pr["date-publication"], "fr-bopinum": pr["fr-bopinum"]}
-                pr_id = publicationref.update_many(qr, {"$set": qr}, upsert=True)
+                pr_id = publicationRef.update_many(qr, {"$set": qr}, upsert=True)
 
         if len(aref) > 0:
             liste_apref.append(aref)
@@ -949,14 +986,14 @@ def update_db():
                       "date-application": ar["date-application"],
                       "application-number-fr": ar["application-number-fr"],
                       "publication-number": ar["publication-number"]}
-                ar_id = applicationref.update_many(qr, {"$set": qr}, upsert=True)
+                ar_id = applicationRef.update_many(qr, {"$set": qr}, upsert=True)
 
         if len(ext) > 0:
             liste_ext.append(ext)
             qr = {"publication-number": ext["publication-number"]}
-            mydoc = list(extensionpublications.find(qr))
+            mydoc = list(extensionPublications.find(qr))
             if len(mydoc) == 0:
-                ex_id = extensionpublications.insert_one(ext).inserted_id
+                ex_id = extensionPublications.insert_one(ext).inserted_id
             else:
                 for res in mydoc:
                     diff = DeepDiff(res, ext)
@@ -972,14 +1009,14 @@ def update_db():
 
                             for k in tks:
                                 nwval = {"$set": {k: ext[k]}}
-                                x = extensionpublications.update_many(qr, nwval, upsert=True)
+                                x = extensionPublications.update_many(qr, nwval, upsert=True)
 
         if len(ta) > 0:
             liste_ta.append(ta)
             qr = {"publication-number": ta["publication-number"]}
-            mydoc = list(titleabstract.find(qr))
+            mydoc = list(titleAbstract.find(qr))
             if len(mydoc) == 0:
-                ta_id = titleabstract.insert_one(ta).inserted_id
+                ta_id = titleAbstract.insert_one(ta).inserted_id
             else:
                 for res in mydoc:
                     diff = DeepDiff(res, ta)
@@ -995,7 +1032,7 @@ def update_db():
 
                             for k in tks:
                                 nwval = {"$set": {k: ta[k]}}
-                                x = titleabstract.update_many(qr, nwval, upsert=True)
+                                x = titleAbstract.update_many(qr, nwval, upsert=True)
 
         if len(gr) > 0:
             liste_grant.append(gr)
@@ -1069,9 +1106,9 @@ def update_db():
         if len(lap) > 0:
             liste_lapsed.append(lap)
             qr = {"publication-number": lap["publication-number"]}
-            mydoc = list(lapsed.find(qr))
+            mydoc = list(notificationLapsed.find(qr))
             if len(mydoc) == 0:
-                lp_id = lapsed.insert_one(lap).inserted_id
+                lp_id = notificationLapsed.insert_one(lap).inserted_id
             else:
                 for res in mydoc:
                     diff = DeepDiff(res, lap)
@@ -1087,7 +1124,7 @@ def update_db():
 
                             for k in tks:
                                 nwval = {"$set": {k: lap[k]}}
-                                x = lapsed.update_many(qr, nwval, upsert=True)
+                                x = notificationLapsed.update_many(qr, nwval, upsert=True)
 
         if len(stus) > 0:
             liste_status.append(stus)
@@ -1179,9 +1216,9 @@ def update_db():
                       "nature-inscription": insc["nature-inscription"],
                       "fr-bopinum": insc["fr-bopinum"],
                       "application-number": insc["application-number"]}
-                mydoc = list(inscription.find(qr))
+                mydoc = list(inscriptionPublications.find(qr))
                 if len(mydoc) == 0:
-                    ins_id = inscription.insert_one(insc).inserted_id
+                    ins_id = inscriptionPublications.insert_one(insc).inserted_id
                 else:
                     for res in mydoc:
                         diff = DeepDiff(res, insc)
@@ -1197,16 +1234,16 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: insc[k]}}
-                                    x = inscription.update_many(qr, nwval, upsert=True)
+                                    x = inscriptionPublications.update_many(qr, nwval, upsert=True)
 
         if len(sear) > 0:
             liste_search.append(sear)
             for ser in sear:
                 qr = {"publication-number": ser["publication-number"],
                       "type-search": ser["type-search"]}
-                mydoc = list(search.find(qr))
+                mydoc = list(searchPublications.find(qr))
                 if len(mydoc) == 0:
-                    ser_id = search.insert_one(ser).inserted_id
+                    ser_id = searchPublications.insert_one(ser).inserted_id
                 else:
                     for res in mydoc:
                         diff = DeepDiff(res, ser)
@@ -1222,16 +1259,16 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: ser[k]}}
-                                    x = search.update_many(qr, nwval, upsert=True)
+                                    x = searchPublications.update_many(qr, nwval, upsert=True)
 
         if len(amend) > 0:
             liste_amended.append(amend)
             for ame in amend:
                 qr = {"publication-number": ame["publication-number"],
                       "claims": ame["claims"]}
-                mydoc = list(amended.find(qr))
+                mydoc = list(amendedClaims.find(qr))
                 if len(mydoc) == 0:
-                    ame_id = amended.insert_one(ame).inserted_id
+                    ame_id = amendedClaims.insert_one(ame).inserted_id
                 else:
                     for res in mydoc:
                         diff = DeepDiff(res, ame)
@@ -1247,7 +1284,7 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: ame[k]}}
-                                    x = amended.update_many(qr, nwval, upsert=True)
+                                    x = amendedClaims.update_many(qr, nwval, upsert=True)
 
         if len(cit) > 0:
             liste_citation.append(cit)
@@ -1263,9 +1300,9 @@ def update_db():
                       "category": ct["category"],
                       "claims": ct["claims"]
                       }
-                mydoc = list(citations.find(qr))
+                mydoc = list(citationPublications.find(qr))
                 if len(mydoc) == 0:
-                    cit_id = citations.insert_one(ct).inserted_id
+                    cit_id = citationPublications.insert_one(ct).inserted_id
                 else:
                     for res in mydoc:
                         diff = DeepDiff(res, ct)
@@ -1281,12 +1318,11 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: ct[k]}}
-                                    x = citations.update_many(qr, nwval, upsert=True)
+                                    x = citationPublications.update_many(qr, nwval, upsert=True)
 
         if len(prio) > 0:
             liste_priority.append(prio)
             for pri in prio:
-                print(pri)
                 qr = {"publication-number": pri["publication-number"],
                       "application-number-fr": pri["application-number-fr"],
                       "sequence": pri["sequence"],
@@ -1295,9 +1331,9 @@ def update_db():
                       "priority-number": pri["priority-number"],
                       "date-priority": pri["date-priority"]
                       }
-                mydoc = list(priorities.find(qr))
+                mydoc = list(priorityPublications.find(qr))
                 if len(mydoc) == 0:
-                    prio_id = priorities.insert_one(pri).inserted_id
+                    prio_id = priorityPublications.insert_one(pri).inserted_id
                 else:
                     for res in mydoc:
                         diff = DeepDiff(res, pri)
@@ -1313,7 +1349,36 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: pri[k]}}
-                                    x = priorities.update_many(qr, nwval, upsert=True)
+                                    x = priorityPublications.update_many(qr, nwval, upsert=True)
+
+        if len(redoc) > 0:
+            liste_redoc.append(redoc)
+            for rdc in redoc:
+                qr = {"type-related-doc": rdc["type-related-doc"],
+                      "country": rdc["country"],
+                      "doc-number": rdc["doc-number"],
+                      "date-document": rdc["date-document"],
+                      "application-number-fr": rdc["application-number-fr"],
+                      "publication-number": rdc["publication-number"]}
+                mydoc = list(relatedDocuments.find(qr))
+                if len(mydoc) == 0:
+                    rdc_id = relatedDocuments.insert_one(rdc).inserted_id
+                else:
+                    for res in mydoc:
+                        diff = DeepDiff(res, rdc)
+                        if len(diff) > 0:
+                            if "values_changed" in diff.keys():
+                                d = diff["values_changed"]
+                                ks = list(d.keys())
+                                tks = []
+                                for k in ks:
+                                    k = k.replace("root['", "")
+                                    k = k.replace("']", "")
+                                    tks.append(k)
+
+                                for k in tks:
+                                    nwval = {"$set": {k: rdc[k]}}
+                                    x = relatedDocuments.update_many(qr, nwval, upsert=True)
 
     liste_pub = []
     for document in publications.find():
@@ -1323,35 +1388,35 @@ def update_db():
     df_pub = pd.DataFrame(liste_pub)
 
     liste_applicants = []
-    for document in personref.find():
+    for document in personRef.find():
         liste_applicants.append(document)
         # print(document)
 
     df_app = pd.DataFrame(liste_applicants)
 
     liste_pubref = []
-    for document in publicationref.find():
+    for document in publicationRef.find():
         liste_pubref.append(document)
         # print(document)
 
     df_pubref = pd.DataFrame(liste_pubref)
 
     liste_appref = []
-    for document in applicationref.find():
+    for document in applicationRef.find():
         liste_appref.append(document)
         # print(document)
 
     df_appref = pd.DataFrame(liste_appref)
 
     liste_ext = []
-    for document in extensionpublications.find():
+    for document in extensionPublications.find():
         liste_ext.append(document)
         # print(document)
 
     df_ext = pd.DataFrame(liste_ext)
 
     liste_ta = []
-    for document in titleabstract.find():
+    for document in titleAbstract.find():
         liste_ta.append(document)
         # print(document)
 
@@ -1379,7 +1444,7 @@ def update_db():
     df_wid = pd.DataFrame(liste_wid)
 
     liste_lps = []
-    for document in lapsed.find():
+    for document in notificationLapsed.find():
         liste_lps.append(document)
         # print(document)
 
@@ -1407,38 +1472,45 @@ def update_db():
     df_err = pd.DataFrame(liste_err)
 
     liste_inscriptions = []
-    for document in inscription.find():
+    for document in inscriptionPublications.find():
         liste_inscriptions.append(document)
         # print(document)
 
     df_ins = pd.DataFrame(liste_inscriptions)
 
     liste_search = []
-    for document in search.find():
+    for document in searchPublications.find():
         liste_search.append(document)
         # print(document)
 
     df_search = pd.DataFrame(liste_search)
 
     liste_amend = []
-    for document in amended.find():
+    for document in amendedClaims.find():
         liste_amend.append(document)
         # print(document)
 
     df_amended = pd.DataFrame(liste_amend)
 
     liste_cit = []
-    for document in citations.find():
+    for document in citationPublications.find():
         liste_cit.append(document)
         # print(document)
 
     df_citations = pd.DataFrame(liste_cit)
 
     liste_prio = []
-    for document in priorities.find():
+    for document in priorityPublications.find():
         liste_prio.append(document)
         # print(document)
 
     df_prio = pd.DataFrame(liste_prio)
+
+    liste_rdc = []
+    for document in relatedDocuments.find():
+        liste_rdc.append(document)
+        # print(document)
+
+    df_rdc = pd.DataFrame(liste_rdc)
 
     client.close()
