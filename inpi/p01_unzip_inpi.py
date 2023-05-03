@@ -7,6 +7,7 @@ import zipfile
 import re
 import shutil
 import tarfile
+import boto3
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
@@ -167,6 +168,20 @@ def unzip():
                     if c == "index.xml":
                         os.remove(clef + item + "/" + c)
             os.remove(clef + item + ".zip")
+            new = os.listdir(clef + item)
+            for fichier in new:
+                conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                                    endpoint_url=os.getenv("ENDPOINT_URL"))
+
+                dirpath = os.path.join(clef, item, fichier)
+
+                prefix = f"{clef}{item}".replace(DATA_PATH, "")
+
+                response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+                print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+
+                conn.close()
 
     #####################################################################################################
 
@@ -201,6 +216,20 @@ def unzip():
                     if c == "index.xml":
                         os.remove(clef + item + "/" + c)
             os.remove(clef + item + ".zip")
+            new = os.listdir(clef + item)
+            for fichier in new:
+                conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                                    endpoint_url=os.getenv("ENDPOINT_URL"))
+
+                dirpath = os.path.join(clef, item, fichier)
+
+                prefix = f"{clef}{item}".replace(DATA_PATH, "")
+
+                response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+                print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+
+                conn.close()
 
     #####################################################################################################
 
@@ -231,6 +260,18 @@ def unzip():
                     folder = item.replace(".zip", "")
                     shutil.move(path + fil, folder)
                     shutil.rmtree(f"{folder}/doc/")
+                    conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                                        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                                        endpoint_url=os.getenv("ENDPOINT_URL"))
+
+                    dirpath = os.path.join(folder, fil)
+
+                    prefix = f"{folder}".replace(DATA_PATH, "")
+
+                    response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
+                    print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
+
+                    conn.close()
             os.remove(item)
 
     #####################################################################################################
@@ -272,6 +313,20 @@ def unzip():
         if not os.path.isdir(fannee):
             os.makedirs(fannee)
         shutil.move(folder, fannee)
+        new = os.listdir(fannee + "/" + folder)
+        for fichier in new:
+            conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                                aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                                endpoint_url=os.getenv("ENDPOINT_URL"))
+
+            dirpath = os.path.join(fannee, folder, fichier)
+
+            prefix = f"{fannee}/{folder}".replace(DATA_PATH, "")
+
+            response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+            print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+
+            conn.close()
 
     #####################################################################################################
 
@@ -318,6 +373,20 @@ def unzip():
                     if c == "index.xml":
                         os.remove(clef + item + "/" + c)
             os.remove(clef + item + ".zip")
+            new = os.listdir(clef + item)
+            for fichier in new:
+                conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                                    endpoint_url=os.getenv("ENDPOINT_URL"))
+
+                dirpath = os.path.join(clef, item, fichier)
+
+                prefix = f"{clef}{item}".replace(DATA_PATH, "")
+
+                response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+                print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+
+                conn.close()
 
     #####################################################################################################
 
@@ -337,6 +406,18 @@ def unzip():
                     if not os.path.isdir(folder):
                         os.makedirs(folder)
                     shutil.move(clef + fil, folder)
+                    conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                                        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                                        endpoint_url=os.getenv("ENDPOINT_URL"))
+
+                    dirpath = os.path.join(folder, fil)
+
+                    prefix = folder.replace(DATA_PATH, "")
+
+                    response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
+                    print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
+
+                    conn.close()
                     if os.path.isdir(f"{folder}/doc/"):
                         shutil.rmtree(f"{folder}/doc/")
                 os.remove(item)
