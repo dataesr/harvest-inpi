@@ -14,6 +14,23 @@ random.seed(1)
 DATA_PATH = "/run/media/julia/DATA/INPI/"
 
 
+def check_date(dae: str) -> str:
+    if len(dae) == 8:
+        mois = dae[4:6]
+        jour = dae[6:]
+        if int(mois) <= 12:
+            if int(jour) <= 31:
+                dte = datetime.strptime(dae, "%Y%m%d").date().isoformat()
+            else:
+                dte = dae
+        else:
+            dte = dae
+    else:
+        dte = dae
+
+    return dte
+
+
 def date_pub_ref(lmf, ptdoc):
     global annee
     global semaine
@@ -163,7 +180,43 @@ def person_ref(bs, pb_n, ptdoc):
 
                 liste.append(dic_app)
 
-    return liste
+    if len(liste) == 0:
+        dic_app = {"publication-number": pb_n,
+                   "address-1": "",
+                   "address-2": "",
+                   "address-3": "",
+                   "mailcode": "",
+                   "pobox": "",
+                   "room": "",
+                   "address-floor": "",
+                   "building": "",
+                   "street": "",
+                   "city": "",
+                   "county": "",
+                   "state": "",
+                   "postcode": "",
+                   "country": "",
+                   "sequence": "",
+                   "type-party": "",
+                   "data-format-person": "",
+                   "prefix": "",
+                   "first-name": "",
+                   "middle-name": "",
+                   "last-name": "",
+                   "orgname": "",
+                   "name-complete": "",
+                   "suffix": "",
+                   "siren": "",
+                   "role": "",
+                   "department": "",
+                   "synonym": "",
+                   "designation": "",
+                   "application-number-fr": ptdoc["id"]}
+        liste.append(dic_app)
+
+    df = pd.DataFrame(data=liste).drop_duplicates()
+
+    return df
 
 
 def pub_ref(bs, pb_n, ptdoc):
@@ -195,12 +248,18 @@ def pub_ref(bs, pb_n, ptdoc):
                 dic_pnref["nature"] = "Certificat d\'utilité"
 
         if "date" in tags_item:
-            dic_pnref["date-publication"] = datetime.strptime(item.find("date").text,
-                                                              "%Y%m%d").date().isoformat()
+            print(item.find("date").text)
+            dae = str(item.find("date").text)
+            dic_pnref["date-publication"] = check_date(dae)
 
         lste_pbref.append(dic_pnref)
 
-    return lste_pbref
+    if len(lste_pbref) == 0:
+        lste_pbref.append(dic_pnref)
+
+    df = pd.DataFrame(data=lste_pbref).drop_duplicates()
+
+    return df
 
 
 def status_list(bs, dic_st):
@@ -221,7 +280,12 @@ def status_list(bs, dic_st):
     else:
         lste_stt.append(dic_st)
 
-    return lste_stt
+    if len(lste_stt) == 0:
+        lste_stt.append(dic_st)
+
+    df = pd.DataFrame(data=lste_stt).drop_duplicates()
+
+    return df
 
 
 def renewal_list(bs, pb_n, ptdoc):
@@ -251,12 +315,23 @@ def renewal_list(bs, pb_n, ptdoc):
                 for clef in inter:
                     dic_ant[clef] = item.find(clef).text
                 if "date" in tags_item:
-                    dic_ant["date-payment"] = datetime.strptime(item.find("date").text,
-                                                                "%Y%m%d").date().isoformat()
+                    print(item.find("date").text)
+                    dae = item.find("date").text
+                    dic_ant["date-payment"] = check_date(dae)
 
                 liste.append(dic_ant)
+    if len(liste) == 0:
+        dic_ant = {"publication-number": pb_n,
+                   "type-payment": "",
+                   "percentile": "",
+                   "date-payment": "",
+                   "amount": "",
+                   "application-number-fr": ptdoc["id"]}
+        liste.append(dic_ant)
 
-    return liste
+    df = pd.DataFrame(data=liste).drop_duplicates()
+
+    return df
 
 
 def search_list(bs, pb_n, ptdoc):
@@ -277,12 +352,22 @@ def search_list(bs, pb_n, ptdoc):
                 clefs_dic = list(dic_srch.keys())
                 dic_srch["fr-bopinum"] = item.find("fr-bopinum").text
                 if "date" in [tag.name for tag in item.find_all()]:
-                    dic_srch["date-search"] = datetime.strptime(item.find("date").text,
-                                                                "%Y%m%d").date().isoformat()
+                    print(item.find("date").text)
+                    date_search = item.find("date").text
+                    dic_srch["date-search"] = check_date(date_search)
 
                 liste.append(dic_srch)
+    if len(liste) == 0:
+        dic_srch = {"publication-number": pb_n,
+                    "type-search": "",
+                    "date-search": "",
+                    "fr-bopinum": "",
+                    "application-number-fr": ptdoc["id"]}
+        liste.append(dic_srch)
 
-    return liste
+    df = pd.DataFrame(data=liste).drop_duplicates()
+
+    return df
 
 
 def errata_list(bs, dic_er):
@@ -298,8 +383,10 @@ def errata_list(bs, dic_er):
             for clef in inter:
                 dic_er[clef] = item.find(clef).text
             if "date" in tags_item:
-                dic_er["date-errata"] = datetime.strptime(item.find("date").text,
-                                                          "%Y%m%d").date().isoformat()
+                print(item.find("date").text)
+                dae = item.find("date").text
+                dic_er["date-errata"] = check_date(dae)
+
             part = ""
             if "1" in dic_er["text"]:
                 part = "1"
@@ -311,7 +398,12 @@ def errata_list(bs, dic_er):
     else:
         lste_err.append(dic_er)
 
-    return lste_err
+    if len(lste_err) == 0:
+        lste_err.append(dic_er)
+
+    df = pd.DataFrame(data=lste_err).drop_duplicates()
+
+    return df
 
 
 def amended_list(bs, dic_am):
@@ -326,7 +418,12 @@ def amended_list(bs, dic_am):
     else:
         lste_am.append(dic_am)
 
-    return lste_am
+    if len(lste_am) == 0:
+        lste_am.append(dic_am)
+
+    df = pd.DataFrame(data=lste_am).drop_duplicates()
+
+    return df
 
 
 def inscr_list(bs, dic_in):
@@ -342,8 +439,10 @@ def inscr_list(bs, dic_in):
             for clef in inter:
                 dic_in[clef] = item.find(clef).text
             if "date" in tags_item:
-                dic_in["date-inscription"] = datetime.strptime(item.find("date").text,
-                                                               "%Y%m%d").date().isoformat()
+                print(item.find("date").text)
+                dae = item.find("date").text
+                dic_in["date-inscription"] = check_date(dae)
+
             if "fr-code-inscription" in tags_item:
                 dic_in["code-inscription"] = item.find("fr-code-inscription").text
 
@@ -353,7 +452,12 @@ def inscr_list(bs, dic_in):
     else:
         lste_in.append(dic_in)
 
-    return lste_in
+    if len(lste_in) == 0:
+        lste_in.append(dic_in)
+
+    df = pd.DataFrame(data=lste_in).drop_duplicates()
+
+    return df
 
 
 def app_ref(bs, pb_n, ptdoc):
@@ -361,7 +465,31 @@ def app_ref(bs, pb_n, ptdoc):
 
     ap_ref = bs.find_all("fr-application-reference")
 
-    for item in ap_ref:
+    if ap_ref:
+        for item in ap_ref:
+            dic_apref = {"data-format-application": "",
+                         "doc-number": "",
+                         "appl-type": "",
+                         "country": "",
+                         "date-application": "",
+                         "application-number-fr": ptdoc["id"],
+                         "publication-number": pb_n}
+
+            clefs_pnref = list(dic_apref)
+            if "data-format" in item.attrs.keys():
+                dic_apref["data-format-application"] = item.attrs["data-format"]
+            tags_item = [tag.name for tag in item.find_all()]
+            inter = list(set(clefs_pnref).intersection(set(tags_item)))
+            for clef in inter:
+                dic_apref[clef] = item.find(clef).text
+            if "date" in tags_item:
+                print(item.find("date").text)
+                dae = item.find("date").text
+                dic_apref["date-application"] = check_date(dae)
+
+            lste_appref.append(dic_apref)
+
+    else:
         dic_apref = {"data-format-application": "",
                      "doc-number": "",
                      "appl-type": "",
@@ -369,21 +497,21 @@ def app_ref(bs, pb_n, ptdoc):
                      "date-application": "",
                      "application-number-fr": ptdoc["id"],
                      "publication-number": pb_n}
-
-        clefs_pnref = list(dic_apref)
-        if "data-format" in item.attrs.keys():
-            dic_apref["data-format-application"] = item.attrs["data-format"]
-        tags_item = [tag.name for tag in item.find_all()]
-        inter = list(set(clefs_pnref).intersection(set(tags_item)))
-        for clef in inter:
-            dic_apref[clef] = item.find(clef).text
-        if "date" in tags_item:
-            dic_apref["date-application"] = datetime.strptime(item.find("date").text,
-                                                              "%Y%m%d").date().isoformat()
-
         lste_appref.append(dic_apref)
 
-    return lste_appref
+    if len(lste_appref) == 0:
+        dic_apref = {"data-format-application": "",
+                     "doc-number": "",
+                     "appl-type": "",
+                     "country": "",
+                     "date-application": "",
+                     "application-number-fr": ptdoc["id"],
+                     "publication-number": pb_n}
+        lste_appref.append(dic_apref)
+
+    df = pd.DataFrame(data=lste_appref).drop_duplicates()
+
+    return df
 
 
 def cit_list(bs, dic_citref):
@@ -406,14 +534,20 @@ def cit_list(bs, dic_citref):
             if "rel-claims" in tags_item:
                 dic_citref["claims"] = item.find("rel-claims").text
             if "date" in tags_item:
-                dic_citref["date-doc"] = datetime.strptime(item.find("date").text,
-                                                           "%Y%m%d").date().isoformat()
+                print(item.find("date").text)
+                dae = item.find("date").text
+                dic_citref["date-doc"] = check_date(dae)
 
             lste_cit.append(dic_citref)
     else:
         lste_cit.append(dic_citref)
 
-    return lste_cit
+    if len(lste_cit) == 0:
+        lste_cit.append(dic_citref)
+
+    df = pd.DataFrame(data=lste_cit).drop_duplicates()
+
+    return df
 
 
 def prio_list(bs, pn_b, ptdoc):
@@ -442,12 +576,35 @@ def prio_list(bs, pn_b, ptdoc):
             if "doc-number" in tags_item:
                 dic_prio["priority-number"] = item.find("doc-number").text
             if "date" in tags_item:
-                dic_prio["date-priority"] = datetime.strptime(item.find("date").text,
-                                                              "%Y%m%d").date().isoformat()
+                print(item.find("date").text)
+                dae = item.find("date").text
+                dic_prio["date-priority"] = check_date(dae)
 
             lste_prio.append(dic_prio)
 
-    return lste_prio
+    else:
+        dic_prio = {"sequence": "",
+                    "country": "",
+                    "kind": "",
+                    "priority-number": "",
+                    "date-priority": "",
+                    "application-number-fr": ptdoc["id"],
+                    "publication-number": pn_b}
+        lste_prio.append(dic_prio)
+
+    if len(lste_prio) == 0:
+        dic_prio = {"sequence": "",
+                    "country": "",
+                    "kind": "",
+                    "priority-number": "",
+                    "date-priority": "",
+                    "application-number-fr": ptdoc["id"],
+                    "publication-number": pn_b}
+        lste_prio.append(dic_prio)
+
+    df = pd.DataFrame(data=lste_prio).drop_duplicates()
+
+    return df
 
 
 def redoc_list(bs, pb_n, ptdoc):
@@ -477,11 +634,202 @@ def redoc_list(bs, pb_n, ptdoc):
             elif "utility-model-basis" and "parent-doc" in tags_item:
                 dc_rdc["type-related-doc"] = "transformation volontaire du brevet en certificat d\'utilité"
             elif "date" in tags_item:
-                dc_rdc["date-document"] = datetime.strptime(item.find("date").text,
-                                                              "%Y%m%d").date().isoformat()
+                print(item.find("date").text)
+                dae = item.find("date").text
+                dc_rdc["date-document"] = check_date(dae)
             lste_rdc.append(dc_rdc)
+    else:
+        dc_rdc = {"type-related-doc": "",
+                  "country": "",
+                  "doc-number": "",
+                  "date-document": "",
+                  "application-number-fr": ptdoc["id"],
+                  "publication-number": pb_n}
+        lste_rdc.append(dc_rdc)
 
-    return lste_rdc
+    if len(lste_rdc) == 0:
+        dc_rdc = {"type-related-doc": "",
+                  "country": "",
+                  "doc-number": "",
+                  "date-document": "",
+                  "application-number-fr": ptdoc["id"],
+                  "publication-number": pb_n}
+        lste_rdc.append(dc_rdc)
+
+    df = pd.DataFrame(data=lste_rdc).drop_duplicates()
+
+    return df
+
+
+def oldipc_list(bs, pb_n, ptdoc):
+    print("oldipc_list")
+    oldipc_ref = bs.find_all("classifications-ipc")
+    lste_oipc = []
+
+    if oldipc_ref:
+        for item in oldipc_ref:
+            dc_oipc = {"edition": "",
+                       "main-classification": "",
+                       "further-classification-sequence": "",
+                       "further-classification": "",
+                       "application-number-fr": ptdoc["id"],
+                       "publication-number": pb_n}
+
+            clefs_oipc = list(dc_oipc)
+            tags_item = [tag.name for tag in item.find_all()]
+            inter = list(set(clefs_oipc).intersection(set(tags_item)))
+            if "sequence" in item.attrs.keys():
+                dc_oipc["further-classification-sequence"] = int(item["sequence"])
+            for clef in inter:
+                dc_oipc[clef] = item.find(clef).text
+            lste_oipc.append(dc_oipc)
+    else:
+        dc_oipc = {"edition": "",
+                   "main-classification": "",
+                   "further-classification-sequence": "",
+                   "further-classification": "",
+                   "application-number-fr": ptdoc["id"],
+                   "publication-number": pb_n}
+        lste_oipc.append(dc_oipc)
+
+    if len(lste_oipc) == 0:
+        dc_oipc = {"edition": "",
+                   "main-classification": "",
+                   "further-classification-sequence": "",
+                   "further-classification": "",
+                   "application-number-fr": ptdoc["id"],
+                   "publication-number": pb_n}
+        lste_oipc.append(dc_oipc)
+
+    df = pd.DataFrame(data=lste_oipc).drop_duplicates()
+
+    return df
+
+
+def ipc_list(bs, pb_n, ptdoc):
+    print("ipc_list")
+    ipc_ref = bs.find_all("classification-ipcr")
+    lste_ipc = []
+
+    if ipc_ref:
+        for item in ipc_ref:
+            dc_ipc = {"classification": "",
+                      "sequence": "",
+                      "application-number-fr": ptdoc["id"],
+                      "publication-number": pb_n}
+
+            clefs_ipc = list(dc_ipc)
+            tags_item = [tag.name for tag in item.find_all()]
+            if "text" in tags_item:
+                dc_ipc["classification"] = item.find("text").text
+            if "sequence" in item.attrs.keys():
+                dc_ipc["sequence"] = int(item["sequence"])
+            lste_ipc.append(dc_ipc)
+    else:
+        dc_ipc = {"classification": "",
+                  "sequence": "",
+                  "application-number-fr": ptdoc["id"],
+                  "publication-number": pb_n}
+        lste_ipc.append(dc_ipc)
+
+    if len(lste_ipc) == 0:
+        dc_ipc = {"classification": "",
+                  "sequence": "",
+                  "application-number-fr": ptdoc["id"],
+                  "publication-number": pb_n}
+        lste_ipc.append(dc_ipc)
+
+    df = pd.DataFrame(data=lste_ipc).drop_duplicates()
+
+    return df
+
+
+def cpc_list(bs, pb_n, ptdoc):
+    print("cpc_list")
+    cpc_ref = bs.find_all("patent-classification")
+    lste_cpc = []
+
+    if cpc_ref:
+        for item in cpc_ref:
+            dc_cpc = {"sequence": "",
+                      "scheme": "",
+                      "office": "",
+                      "date-cpc": "",
+                      "symbol": "",
+                      "position": "",
+                      "value": "",
+                      "status": "",
+                      "source": "",
+                      "date-classification": "",
+                      "application-number-fr": ptdoc["id"],
+                      "publication-number": pb_n}
+
+            clefs_cpc = list(dc_cpc)
+            tags_item = [tag.name for tag in item.find_all()]
+            inter = list(set(clefs_cpc).intersection(set(tags_item)))
+            scheme_ref = item.find_all("classification-scheme")
+            if scheme_ref:
+                if len(scheme_ref) == 1:
+                    for it in scheme_ref:
+                        dc_cpc["scheme"] = it['scheme']
+                        dc_cpc["office"] = it['office']
+            if "sequence" in item.attrs.keys():
+                dc_cpc["sequence"] = int(item["sequence"])
+            if "classification-symbol" in tags_item:
+                dc_cpc["symbol"] = item.find("classification-symbol").text
+            if "symbol-position" in tags_item:
+                dc_cpc["position"] = item.find("symbol-position").text
+            if "classification-value" in tags_item:
+                dc_cpc["value"] = item.find("classification-value").text
+            if "classification-status" in tags_item:
+                dc_cpc["status"] = item.find("classification-status").text
+            if "classification-data-source" in tags_item:
+                dc_cpc["source"] = item.find("classification-data-source").text
+            if "date" in tags_item:
+                print(item.find("date").text)
+                dae = item.find("date").text
+                dc_cpc["date-cpc"] = check_date(dae)
+
+            if "action-date" in tags_item:
+                print(item.find("action-date").find("date").text)
+                dae = item.find("action-date").find("date").text
+                dc_cpc["date-classification"] = check_date(dae)
+
+            lste_cpc.append(dc_cpc)
+
+    else:
+        dc_cpc = {"sequence": "",
+                  "scheme": "",
+                  "office": "",
+                  "date-cpc": "",
+                  "symbol": "",
+                  "position": "",
+                  "value": "",
+                  "status": "",
+                  "source": "",
+                  "date-classification": "",
+                  "application-number-fr": ptdoc["id"],
+                  "publication-number": pb_n}
+        lste_cpc.append(dc_cpc)
+
+    if len(lste_cpc) == 0:
+        dc_cpc = {"sequence": "",
+                  "scheme": "",
+                  "office": "",
+                  "date-cpc": "",
+                  "symbol": "",
+                  "position": "",
+                  "value": "",
+                  "status": "",
+                  "source": "",
+                  "date-classification": "",
+                  "application-number-fr": ptdoc["id"],
+                  "publication-number": pb_n}
+        lste_cpc.append(dc_cpc)
+
+    df = pd.DataFrame(data=lste_cpc).drop_duplicates()
+
+    return df
 
 
 # def read_file(file):
@@ -607,7 +955,7 @@ def update_db():
     for dir in list_dir:
         for dirpath, dirs, files in os.walk(f"/run/media/julia/DATA/INPI/{dir}/", topdown=True):
             if dirpath != f"/run/media/julia/DATA/INPI/{dir}/":
-                nb_files = round(len(files) * 0.001)
+                nb_files = round(len(files) * 0.0001)
                 sp_files = random.sample(files, nb_files)
                 dico[dir] = sp_files
                 for item in sp_files:
@@ -671,19 +1019,15 @@ def update_db():
     for item in db.list_collection_names():
         db[item].drop()
 
-    publications = db.publications
+    publication = db.publication
 
-    personRef = db.personRef
+    person = db.person
 
     publicationRef = db.publicationRef
 
-    applicationRef = db.applicationRef
+    application = db.application
 
-    extensionPublications = db.extensionPublications
-
-    titleAbstract = db.titleAbstract
-
-    grant = db.grant
+    granted = db.granted
 
     refusal = db.refusal
 
@@ -697,28 +1041,28 @@ def update_db():
 
     errata = db.errata
 
-    inscriptionPublications = db.inscriptionPublications
+    inscription = db.inscription
 
-    searchPublications = db.searchPublications
+    search = db.search
 
-    amendedClaims = db.amendedClaims
+    amendedClaim = db.amendedClaim
 
-    citationPublications = db.citationPublications
+    citation = db.citation
 
-    priorityPublications = db.priorityPublications
-    
-    relatedDocuments = db.relatedDocuments
+    priority = db.priority
+
+    relatedDocument = db.relatedDocument
+
+    oldIpc = db.oldIpc
+
+    ipc = db.ipc
+
+    cpc = db.cpc
 
     liste_pn = []
     liste_app = []
     liste_pbref = []
     liste_apref = []
-    liste_ext = []
-    liste_ta = []
-    liste_grant = []
-    liste_refusal = []
-    liste_withdrawal = []
-    liste_lapsed = []
     liste_status = []
     liste_renewal = []
     liste_errata = []
@@ -728,6 +1072,9 @@ def update_db():
     liste_citation = []
     liste_priority = []
     liste_redoc = []
+    liste_oldipc = []
+    liste_ipc = []
+    liste_cpc = []
     for file in dirfile["fullpath"]:
         print(file)
         with open(file, "r") as f:
@@ -752,7 +1099,31 @@ def update_db():
                       "country": pn["country"],
                       "date-produced": date_produced,
                       "publication-number": pub_n,
-                      "status": stats}
+                      "status": stats,
+                      "fr-extension-territory": "",
+                      "title": "",
+                      "abstract": "",
+                      "kind-grant": "",
+                      "date-grant": "",
+                      "fr-bopinum-grant": "",
+                      "date-refusal": "",
+                      "date-withdrawal": "",
+                      "date-lapsed": "",
+                      "fr-bopinum-lapsed": ""
+                      }
+
+            ex = bs_data.find("fr-extension")
+
+            if ex:
+                if ex.find("fr-extension-territory"):
+                    dic_pn["fr-extension-territory"] = ex.find("fr-extension-territory").text
+
+            tit = bs_data.find("invention-title")
+            abst = bs_data.find("abstract")
+            if tit:
+                dic_pn["title"] = tit.text.lstrip().rstrip()
+            if abst:
+                dic_pn["abstract"] = abst.text.lstrip().rstrip()
 
             appl = person_ref(bs_data, pub_n, pn)
 
@@ -760,82 +1131,43 @@ def update_db():
 
             aref = app_ref(bs_data, pub_n, pn)
 
-            ex = bs_data.find("fr-extension")
-
-            ext = {"publication-number": pub_n,
-                   "territory": "",
-                   "application-number-fr": pn["id"]}
-
-            if ex:
-                if ex.find("fr-extension-territory"):
-                    ext["territory"] = ex.find("fr-extension-territory").text
-
-            tit = bs_data.find("invention-title")
-            abst = bs_data.find("abstract")
-
-            ta = {"publication-number": pub_n,
-                  "title": "",
-                  "abstract": "",
-                  "application-number-fr": pn["id"]}
-
-            if tit:
-                ta["title"] = tit.text.lstrip().rstrip()
-            if abst:
-                ta["abstract"] = abst.text.lstrip().rstrip()
-
             ptlife = bs_data.find("fr-patent-life")
-
-            gr = {"publication-number": pub_n,
-                  "country": "",
-                  "kind": "",
-                  "date-grant": "",
-                  "fr-bopinum": "",
-                  "application-number-fr": pn["id"]}
-
-            rf = {"publication-number": pub_n,
-                  "date-refusal": "",
-                  "application-number-fr": pn["id"]}
-
-            wid = {"publication-number": pub_n,
-                   "date-withdrawal": "",
-                   "application-number-fr": pn["id"]}
-
-            lap = {"publication-number": pub_n,
-                   "date-lapse": "",
-                   "fr-bopinum": "",
-                   "application-number-fr": pn["id"]}
 
             if ptlife:
                 grt = ptlife.find("fr-date-granted")
 
-                clefs_grt = list(gr)
                 if grt:
                     tags_item = [tag.name for tag in grt.find_all()]
-                    inter = list(set(clefs_grt).intersection(set(tags_item)))
-                    for clef in inter:
-                        gr[clef] = grt.find(clef).text
+                    if "kind" in tags_item:
+                        dic_pn["kind-grant"] = grt.find("kind").text
+                    if "fr-bopinum" in tags_item:
+                        dic_pn["fr-bopinum-grant"] = grt.find("fr-bopinum").text
                     if "date" in tags_item:
-                        gr["date-grant"] = datetime.strptime(grt.find("date").text,
-                                                             "%Y%m%d").date().isoformat()
+                        print(grt.find("date").text)
+                        dae = grt.find("date").text
+                        dic_pn["date-grant"] = check_date(dae)
 
                 ref = ptlife.find("fr-date-application-refused")
 
                 if ref:
-                    rf["date-refusal"] = datetime.strptime(ref.find("date").text,
-                                                           "%Y%m%d").date().isoformat()
+                    print(ref.find("date").text)
+                    dae = ref.find("date").text
+                    dic_pn["date-refusal"] = check_date(dae)
 
                 wd = ptlife.find("fr-date-application-withdrawn")
 
                 if wd:
-                    wid["date-withdrawal"] = datetime.strptime(wd.find("date").text,
-                                                               "%Y%m%d").date().isoformat()
+                    print(wd.find("date").text)
+                    dae = wd.find("date").text
+                    dic_pn["date-withdrawal"] = check_date(dae)
 
                 lp = ptlife.find("fr-date-notification-lapsed")
 
                 if lp:
-                    lap["date-lapse"] = datetime.strptime(lp.find("date").text,
-                                                          "%Y%m%d").date().isoformat()
-                    lap["fr-bopinum"] = lp.find("fr-bopinum").text
+                    print(lp.find("date").text)
+                    dae = lp.find("date").text
+                    dic_pn["date-lapsed"] = check_date(dae)
+                    dic_pn["fr-bopinum-lapsed"] = lp.find("fr-bopinum").text
 
                 dic_stt = {"publication-number": pub_n,
                            "lang": "",
@@ -885,42 +1217,46 @@ def update_db():
 
                 cit = cit_list(ptlife, dic_citations)
 
-                prio = prio_list(bs_data, pub_n, pn)
+            dic_pn = pd.DataFrame(data=[dic_pn]).drop_duplicates()
 
-                redoc = redoc_list(bs_data, pub_n, pn)
+            prio = prio_list(bs_data, pub_n, pn)
+
+            redoc = redoc_list(bs_data, pub_n, pn)
+
+            oldipc = oldipc_list(bs_data, pub_n, pn)
+
+            ipcs = ipc_list(bs_data, pub_n, pn)
+
+            cpcs = cpc_list(bs_data, pub_n, pn)
 
 
         else:
-            dic_pn = {}
-            appl = []
-            pref = []
-            aref = []
-            ext = {}
-            ta = {}
-            gr = {}
-            rf = {}
-            wid = {}
-            lap = {}
-            stus = []
-            rnw = []
-            erra = []
-            ins = []
-            sear = []
-            amend = []
-            cit = []
-            prio = []
-            redoc = []
-            
+            dic_pn = pd.DataFrame(data=[])
+            appl = pd.DataFrame(data=[])
+            pref = pd.DataFrame(data=[])
+            aref = pd.DataFrame(data=[])
+            stus = pd.DataFrame(data=[])
+            rnw = pd.DataFrame(data=[])
+            erra = pd.DataFrame(data=[])
+            ins = pd.DataFrame(data=[])
+            sear = pd.DataFrame(data=[])
+            amend = pd.DataFrame(data=[])
+            cit = pd.DataFrame(data=[])
+            prio = pd.DataFrame(data=[])
+            redoc = pd.DataFrame(data=[])
+            oldipc = pd.DataFrame(data=[])
+            ipcs = pd.DataFrame(data=[])
+            cpcs = pd.DataFrame(data=[])
 
         if len(dic_pn) > 0:
             liste_pn.append(dic_pn)
-            qr = {"publication-number": dic_pn["publication-number"]}
-            mydoc = list(publications.find(qr))
+            qr = {"publication-number": dic_pn["publication-number"].item()}
+            mydoc = list(publication.find(qr))
             if len(mydoc) == 0:
-                pub_id = publications.insert_one(dic_pn).inserted_id
+                pub_id = publication.insert_one(dic_pn.to_dict("records")[0]).inserted_id
             else:
                 for res in mydoc:
-                    diff = DeepDiff(res, dic_pn)
+                    diff = DeepDiff(res, dic_pn.to_dict("records")[0])
                     if len(diff) > 0:
                         if "values_changed" in diff.keys():
                             d = diff["values_changed"]
@@ -932,12 +1268,12 @@ def update_db():
                                 tks.append(k)
 
                             for k in tks:
-                                nwval = {"$set": {k: dic_pn[k]}}
-                                x = publications.update_many(qr, nwval, upsert=True)
+                                nwval = {"$set": {k: dic_pn[k].item()}}
+                                x = publication.update_many(qr, nwval, upsert=True)
 
         if len(appl) > 0:
             liste_app.append(appl)
-            for app in appl:
+            for _, app in appl.iterrows():
                 qr = {"publication-number": app["publication-number"],
                       "application-number-fr": app["application-number-fr"],
                       "sequence": app["sequence"],
@@ -946,12 +1282,12 @@ def update_db():
                       "middle-name": app["middle-name"],
                       "last-name": app["last-name"],
                       "orgname": app["orgname"]}
-                mydoc = list(personRef.find(qr))
+                mydoc = list(person.find(qr))
                 if len(mydoc) == 0:
-                    app_id = personRef.insert_one(app).inserted_id
+                    app_id = person.insert_one(app.to_dict()).inserted_id
                 else:
                     for res in mydoc:
-                        diff = DeepDiff(res, app)
+                        diff = DeepDiff(res, app.to_dict())
                         if len(diff) > 0:
                             if "values_changed" in diff.keys():
                                 d = diff["values_changed"]
@@ -964,21 +1300,41 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: app[k]}}
-                                    x = personRef.update_many(qr, nwval, upsert=True)
+                                    x = person.update_many(qr, nwval, upsert=True)
 
         if len(pref) > 0:
             liste_pbref.append(pref)
-            for pr in pref:
+            for _, pr in pref.iterrows():
                 qr = {"publication-number": pr["publication-number"],
                       "application-number-fr": pr["application-number-fr"],
-                      "data-format-publication": pr["data-format-publication"], "kind": pr["kind"],
+                      "data-format-publication": pr["data-format-publication"],
+                      "kind": pr["kind"],
                       "nature": pr["nature"],
-                      "date-publication": pr["date-publication"], "fr-bopinum": pr["fr-bopinum"]}
-                pr_id = publicationRef.update_many(qr, {"$set": qr}, upsert=True)
+                      "date-publication": pr["date-publication"],
+                      "fr-bopinum": pr["fr-bopinum"]}
+                mydoc = list(publicationRef.find(qr))
+                if len(mydoc) == 0:
+                    pr_id = publicationRef.insert_one(pr.to_dict()).inserted_id
+                else:
+                    for res in mydoc:
+                        diff = DeepDiff(res, pr.to_dict())
+                        if len(diff) > 0:
+                            if "values_changed" in diff.keys():
+                                d = diff["values_changed"]
+                                ks = list(d.keys())
+                                tks = []
+                                for k in ks:
+                                    k = k.replace("root['", "")
+                                    k = k.replace("']", "")
+                                    tks.append(k)
+
+                                for k in tks:
+                                    nwval = {"$set": {k: pr[k]}}
+                                    x = publicationRef.update_many(qr, nwval, upsert=True)
 
         if len(aref) > 0:
             liste_apref.append(aref)
-            for ar in aref:
+            for _, ar in aref.iterrows():
                 qr = {"data-format-application": ar["data-format-application"],
                       "doc-number": ar["doc-number"],
                       "appl-type": ar["appl-type"],
@@ -986,156 +1342,36 @@ def update_db():
                       "date-application": ar["date-application"],
                       "application-number-fr": ar["application-number-fr"],
                       "publication-number": ar["publication-number"]}
-                ar_id = applicationRef.update_many(qr, {"$set": qr}, upsert=True)
+                mydoc = list(application.find(qr))
+                if len(mydoc) == 0:
+                    ar_id = application.insert_one(ar.to_dict()).inserted_id
+                else:
+                    for res in mydoc:
+                        diff = DeepDiff(res, ar.to_dict())
+                        if len(diff) > 0:
+                            if "values_changed" in diff.keys():
+                                d = diff["values_changed"]
+                                ks = list(d.keys())
+                                tks = []
+                                for k in ks:
+                                    k = k.replace("root['", "")
+                                    k = k.replace("']", "")
+                                    tks.append(k)
 
-        if len(ext) > 0:
-            liste_ext.append(ext)
-            qr = {"publication-number": ext["publication-number"]}
-            mydoc = list(extensionPublications.find(qr))
-            if len(mydoc) == 0:
-                ex_id = extensionPublications.insert_one(ext).inserted_id
-            else:
-                for res in mydoc:
-                    diff = DeepDiff(res, ext)
-                    if len(diff) > 0:
-                        if "values_changed" in diff.keys():
-                            d = diff["values_changed"]
-                            ks = list(d.keys())
-                            tks = []
-                            for k in ks:
-                                k = k.replace("root['", "")
-                                k = k.replace("']", "")
-                                tks.append(k)
-
-                            for k in tks:
-                                nwval = {"$set": {k: ext[k]}}
-                                x = extensionPublications.update_many(qr, nwval, upsert=True)
-
-        if len(ta) > 0:
-            liste_ta.append(ta)
-            qr = {"publication-number": ta["publication-number"]}
-            mydoc = list(titleAbstract.find(qr))
-            if len(mydoc) == 0:
-                ta_id = titleAbstract.insert_one(ta).inserted_id
-            else:
-                for res in mydoc:
-                    diff = DeepDiff(res, ta)
-                    if len(diff) > 0:
-                        if "values_changed" in diff.keys():
-                            d = diff["values_changed"]
-                            ks = list(d.keys())
-                            tks = []
-                            for k in ks:
-                                k = k.replace("root['", "")
-                                k = k.replace("']", "")
-                                tks.append(k)
-
-                            for k in tks:
-                                nwval = {"$set": {k: ta[k]}}
-                                x = titleAbstract.update_many(qr, nwval, upsert=True)
-
-        if len(gr) > 0:
-            liste_grant.append(gr)
-            qr = {"publication-number": gr["publication-number"]}
-            mydoc = list(grant.find(qr))
-            if len(mydoc) == 0:
-                gr_id = grant.insert_one(gr).inserted_id
-            else:
-                for res in mydoc:
-                    diff = DeepDiff(res, gr)
-                    if len(diff) > 0:
-                        if "values_changed" in diff.keys():
-                            d = diff["values_changed"]
-                            ks = list(d.keys())
-                            tks = []
-                            for k in ks:
-                                k = k.replace("root['", "")
-                                k = k.replace("']", "")
-                                tks.append(k)
-
-                            for k in tks:
-                                nwval = {"$set": {k: gr[k]}}
-                                x = grant.update_many(qr, nwval, upsert=True)
-
-        if len(rf) > 0:
-            liste_refusal.append(rf)
-            qr = {"publication-number": rf["publication-number"]}
-            mydoc = list(refusal.find(qr))
-            if len(mydoc) == 0:
-                rf_id = refusal.insert_one(rf).inserted_id
-            else:
-                for res in mydoc:
-                    diff = DeepDiff(res, rf)
-                    if len(diff) > 0:
-                        if "values_changed" in diff.keys():
-                            d = diff["values_changed"]
-                            ks = list(d.keys())
-                            tks = []
-                            for k in ks:
-                                k = k.replace("root['", "")
-                                k = k.replace("']", "")
-                                tks.append(k)
-
-                            for k in tks:
-                                nwval = {"$set": {k: rf[k]}}
-                                x = refusal.update_many(qr, nwval, upsert=True)
-
-        if len(wid) > 0:
-            liste_withdrawal.append(wid)
-            qr = {"publication-number": wid["publication-number"]}
-            mydoc = list(withdrawal.find(qr))
-            if len(mydoc) == 0:
-                wd_id = withdrawal.insert_one(wid).inserted_id
-            else:
-                for res in mydoc:
-                    diff = DeepDiff(res, wid)
-                    if len(diff) > 0:
-                        if "values_changed" in diff.keys():
-                            d = diff["values_changed"]
-                            ks = list(d.keys())
-                            tks = []
-                            for k in ks:
-                                k = k.replace("root['", "")
-                                k = k.replace("']", "")
-                                tks.append(k)
-
-                            for k in tks:
-                                nwval = {"$set": {k: wid[k]}}
-                                x = withdrawal.update_many(qr, nwval, upsert=True)
-
-        if len(lap) > 0:
-            liste_lapsed.append(lap)
-            qr = {"publication-number": lap["publication-number"]}
-            mydoc = list(notificationLapsed.find(qr))
-            if len(mydoc) == 0:
-                lp_id = notificationLapsed.insert_one(lap).inserted_id
-            else:
-                for res in mydoc:
-                    diff = DeepDiff(res, lap)
-                    if len(diff) > 0:
-                        if "values_changed" in diff.keys():
-                            d = diff["values_changed"]
-                            ks = list(d.keys())
-                            tks = []
-                            for k in ks:
-                                k = k.replace("root['", "")
-                                k = k.replace("']", "")
-                                tks.append(k)
-
-                            for k in tks:
-                                nwval = {"$set": {k: lap[k]}}
-                                x = notificationLapsed.update_many(qr, nwval, upsert=True)
+                                for k in tks:
+                                    nwval = {"$set": {k: ar[k]}}
+                                    x = application.update_many(qr, nwval, upsert=True)
 
         if len(stus) > 0:
             liste_status.append(stus)
-            for st in stus:
+            for _, st in stus.iterrows():
                 qr = {"publication-number": st["publication-number"]}
                 mydoc = list(status.find(qr))
                 if len(mydoc) == 0:
-                    stt_id = status.insert_one(st).inserted_id
+                    stt_id = status.insert_one(st.to_dict()).inserted_id
                 else:
                     for res in mydoc:
-                        diff = DeepDiff(res, st)
+                        diff = DeepDiff(res, st.to_dict())
                         if len(diff) > 0:
                             if "values_changed" in diff.keys():
                                 d = diff["values_changed"]
@@ -1152,7 +1388,7 @@ def update_db():
 
         if len(rnw) > 0:
             liste_renewal.append(rnw)
-            for rn in rnw:
+            for _, rn in rnw.iterrows():
                 qr = {"publication-number": rn["publication-number"],
                       "type-payment": rn["type-payment"],
                       "percentile": rn["percentile"],
@@ -1160,10 +1396,10 @@ def update_db():
                       "amount": rn["amount"]}
                 mydoc = list(renewal.find(qr))
                 if len(mydoc) == 0:
-                    rnw_id = renewal.insert_one(rn).inserted_id
+                    rnw_id = renewal.insert_one(rn.to_dict()).inserted_id
                 else:
                     for res in mydoc:
-                        diff = DeepDiff(res, rn)
+                        diff = DeepDiff(res, rn.to_dict())
                         if len(diff) > 0:
                             if "values_changed" in diff.keys():
                                 d = diff["values_changed"]
@@ -1180,7 +1416,7 @@ def update_db():
 
         if len(erra) > 0:
             liste_errata.append(erra)
-            for ert in erra:
+            for _, ert in erra.iterrows():
                 qr = {"publication-number": ert["publication-number"],
                       "part": ert["part"],
                       "text": ert["text"],
@@ -1188,10 +1424,10 @@ def update_db():
                       "fr-bopinum": ert["fr-bopinum"]}
                 mydoc = list(errata.find(qr))
                 if len(mydoc) == 0:
-                    err_id = errata.insert_one(ert).inserted_id
+                    err_id = errata.insert_one(ert.to_dict()).inserted_id
                 else:
                     for res in mydoc:
-                        diff = DeepDiff(res, ert)
+                        diff = DeepDiff(res, ert.to_dict())
                         if len(diff) > 0:
                             if "values_changed" in diff.keys():
                                 d = diff["values_changed"]
@@ -1208,7 +1444,7 @@ def update_db():
 
         if len(ins) > 0:
             liste_ins.append(ins)
-            for insc in ins:
+            for _, insc in ins.iterrows():
                 qr = {"publication-number": insc["publication-number"],
                       "registered-number": insc["registered-number"],
                       "date-inscription": insc["date-inscription"],
@@ -1216,12 +1452,12 @@ def update_db():
                       "nature-inscription": insc["nature-inscription"],
                       "fr-bopinum": insc["fr-bopinum"],
                       "application-number": insc["application-number"]}
-                mydoc = list(inscriptionPublications.find(qr))
+                mydoc = list(inscription.find(qr))
                 if len(mydoc) == 0:
-                    ins_id = inscriptionPublications.insert_one(insc).inserted_id
+                    ins_id = inscription.insert_one(insc.to_dict()).inserted_id
                 else:
                     for res in mydoc:
-                        diff = DeepDiff(res, insc)
+                        diff = DeepDiff(res, insc.to_dict())
                         if len(diff) > 0:
                             if "values_changed" in diff.keys():
                                 d = diff["values_changed"]
@@ -1234,19 +1470,19 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: insc[k]}}
-                                    x = inscriptionPublications.update_many(qr, nwval, upsert=True)
+                                    x = inscription.update_many(qr, nwval, upsert=True)
 
         if len(sear) > 0:
             liste_search.append(sear)
-            for ser in sear:
+            for _, ser in sear.iterrows():
                 qr = {"publication-number": ser["publication-number"],
                       "type-search": ser["type-search"]}
-                mydoc = list(searchPublications.find(qr))
+                mydoc = list(search.find(qr))
                 if len(mydoc) == 0:
-                    ser_id = searchPublications.insert_one(ser).inserted_id
+                    ser_id = search.insert_one(ser.to_dict()).inserted_id
                 else:
                     for res in mydoc:
-                        diff = DeepDiff(res, ser)
+                        diff = DeepDiff(res, ser.to_dict())
                         if len(diff) > 0:
                             if "values_changed" in diff.keys():
                                 d = diff["values_changed"]
@@ -1259,19 +1495,19 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: ser[k]}}
-                                    x = searchPublications.update_many(qr, nwval, upsert=True)
+                                    x = search.update_many(qr, nwval, upsert=True)
 
         if len(amend) > 0:
             liste_amended.append(amend)
-            for ame in amend:
+            for _, ame in amend.iterrows():
                 qr = {"publication-number": ame["publication-number"],
                       "claims": ame["claims"]}
-                mydoc = list(amendedClaims.find(qr))
+                mydoc = list(amendedClaim.find(qr))
                 if len(mydoc) == 0:
-                    ame_id = amendedClaims.insert_one(ame).inserted_id
+                    ame_id = amendedClaim.insert_one(ame.to_dict()).inserted_id
                 else:
                     for res in mydoc:
-                        diff = DeepDiff(res, ame)
+                        diff = DeepDiff(res, ame.to_dict())
                         if len(diff) > 0:
                             if "values_changed" in diff.keys():
                                 d = diff["values_changed"]
@@ -1284,11 +1520,11 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: ame[k]}}
-                                    x = amendedClaims.update_many(qr, nwval, upsert=True)
+                                    x = amendedClaim.update_many(qr, nwval, upsert=True)
 
         if len(cit) > 0:
             liste_citation.append(cit)
-            for ct in cit:
+            for _, ct in cit.iterrows():
                 qr = {"publication-number": ct["publication-number"],
                       "application-number-fr": ct["application-number-fr"],
                       "type-citation": ct["type-citation"],
@@ -1300,12 +1536,12 @@ def update_db():
                       "category": ct["category"],
                       "claims": ct["claims"]
                       }
-                mydoc = list(citationPublications.find(qr))
+                mydoc = list(citation.find(qr))
                 if len(mydoc) == 0:
-                    cit_id = citationPublications.insert_one(ct).inserted_id
+                    cit_id = citation.insert_one(ct.to_dict()).inserted_id
                 else:
                     for res in mydoc:
-                        diff = DeepDiff(res, ct)
+                        diff = DeepDiff(res, ct.to_dict())
                         if len(diff) > 0:
                             if "values_changed" in diff.keys():
                                 d = diff["values_changed"]
@@ -1318,11 +1554,11 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: ct[k]}}
-                                    x = citationPublications.update_many(qr, nwval, upsert=True)
+                                    x = citation.update_many(qr, nwval, upsert=True)
 
         if len(prio) > 0:
             liste_priority.append(prio)
-            for pri in prio:
+            for _, pri in prio.iterrows():
                 qr = {"publication-number": pri["publication-number"],
                       "application-number-fr": pri["application-number-fr"],
                       "sequence": pri["sequence"],
@@ -1331,12 +1567,12 @@ def update_db():
                       "priority-number": pri["priority-number"],
                       "date-priority": pri["date-priority"]
                       }
-                mydoc = list(priorityPublications.find(qr))
+                mydoc = list(priority.find(qr))
                 if len(mydoc) == 0:
-                    prio_id = priorityPublications.insert_one(pri).inserted_id
+                    prio_id = priority.insert_one(pri.to_dict()).inserted_id
                 else:
                     for res in mydoc:
-                        diff = DeepDiff(res, pri)
+                        diff = DeepDiff(res, pri.to_dict())
                         if len(diff) > 0:
                             if "values_changed" in diff.keys():
                                 d = diff["values_changed"]
@@ -1349,23 +1585,23 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: pri[k]}}
-                                    x = priorityPublications.update_many(qr, nwval, upsert=True)
+                                    x = priority.update_many(qr, nwval, upsert=True)
 
         if len(redoc) > 0:
             liste_redoc.append(redoc)
-            for rdc in redoc:
+            for _, rdc in redoc.iterrows():
                 qr = {"type-related-doc": rdc["type-related-doc"],
                       "country": rdc["country"],
                       "doc-number": rdc["doc-number"],
                       "date-document": rdc["date-document"],
                       "application-number-fr": rdc["application-number-fr"],
                       "publication-number": rdc["publication-number"]}
-                mydoc = list(relatedDocuments.find(qr))
+                mydoc = list(relatedDocument.find(qr))
                 if len(mydoc) == 0:
-                    rdc_id = relatedDocuments.insert_one(rdc).inserted_id
+                    rdc_id = relatedDocument.insert_one(rdc.to_dict()).inserted_id
                 else:
                     for res in mydoc:
-                        diff = DeepDiff(res, rdc)
+                        diff = DeepDiff(res, rdc.to_dict())
                         if len(diff) > 0:
                             if "values_changed" in diff.keys():
                                 d = diff["values_changed"]
@@ -1378,17 +1614,110 @@ def update_db():
 
                                 for k in tks:
                                     nwval = {"$set": {k: rdc[k]}}
-                                    x = relatedDocuments.update_many(qr, nwval, upsert=True)
+                                    x = relatedDocument.update_many(qr, nwval, upsert=True)
+
+        if len(oldipc) > 0:
+            liste_oldipc.append(oldipc)
+            for _, oipc in oldipc.iterrows():
+                qr = {"edition": oipc["edition"],
+                      "main-classification": oipc["main-classification"],
+                      "further-classification-sequence": oipc["further-classification-sequence"],
+                      "further-classification": oipc["further-classification"],
+                      "application-number-fr": oipc["application-number-fr"],
+                      "publication-number": oipc["publication-number"]}
+                mydoc = list(oldIpc.find(qr))
+                if len(mydoc) == 0:
+                    oipc_id = oldIpc.insert_one(oipc.to_dict()).inserted_id
+                else:
+                    for res in mydoc:
+                        diff = DeepDiff(res, oipc.to_dict())
+                        if len(diff) > 0:
+                            if "values_changed" in diff.keys():
+                                d = diff["values_changed"]
+                                ks = list(d.keys())
+                                tks = []
+                                for k in ks:
+                                    k = k.replace("root['", "")
+                                    k = k.replace("']", "")
+                                    tks.append(k)
+
+                                for k in tks:
+                                    nwval = {"$set": {k: oipc[k]}}
+                                    x = oldIpc.update_many(qr, nwval, upsert=True)
+
+        if len(ipcs) > 0:
+            liste_ipc.append(ipcs)
+            for _, ip in ipcs.iterrows():
+                qr = {"classification": ip["classification"],
+                      "sequence": ip["sequence"],
+                      "application-number-fr": ip["application-number-fr"],
+                      "publication-number": ip["publication-number"]}
+                mydoc = list(ipc.find(qr))
+                if len(mydoc) == 0:
+                    ipc_id = ipc.insert_one(ip.to_dict()).inserted_id
+                else:
+                    for res in mydoc:
+                        diff = DeepDiff(res, ip.to_dict())
+                        if len(diff) > 0:
+                            if "values_changed" in diff.keys():
+                                d = diff["values_changed"]
+                                ks = list(d.keys())
+                                tks = []
+                                for k in ks:
+                                    k = k.replace("root['", "")
+                                    k = k.replace("']", "")
+                                    tks.append(k)
+
+                                for k in tks:
+                                    nwval = {"$set": {k: ip[k]}}
+                                    x = ipc.update_many(qr, nwval, upsert=True)
+
+        if len(cpcs) > 0:
+            liste_cpc.append(cpcs)
+            for _, cp in cpcs.iterrows():
+                did = db.cpc.drop_indexes()
+                qr = {"sequence": cp["sequence"],
+                      "scheme": cp["scheme"],
+                      "office": cp["office"],
+                      "date-cpc": cp["date-cpc"],
+                      "symbol": cp["symbol"],
+                      "position": cp["position"],
+                      "value": cp["value"],
+                      "status": cp["status"],
+                      "source": cp["application-number-fr"],
+                      "date-classification": cp["application-number-fr"],
+                      "application-number-fr": cp["application-number-fr"],
+                      "publication-number": cp["publication-number"]}
+                mydoc = list(cpc.find(qr))
+                if len(mydoc) == 0:
+                    cpc_id = cpc.insert_one(cp.to_dict()).inserted_id
+                else:
+                    for res in mydoc:
+                        diff = DeepDiff(res, cp.to_dict())
+                        if len(diff) > 0:
+                            if "values_changed" in diff.keys():
+                                d = diff["values_changed"]
+                                ks = list(d.keys())
+                                tks = []
+                                for k in ks:
+                                    k = k.replace("root['", "")
+                                    k = k.replace("']", "")
+                                    tks.append(k)
+
+                                for k in tks:
+                                    did2 = db.cpc.drop_indexes()
+                                    nwval = {"$set": {k: cp[k]}}
+                                    x = cpc.update_many(qr, nwval, upsert=True)
 
     liste_pub = []
-    for document in publications.find():
+    for document in publication.find():
         liste_pub.append(document)
         # print(document)
 
     df_pub = pd.DataFrame(liste_pub)
 
     liste_applicants = []
-    for document in personRef.find():
+    for document in person.find():
         liste_applicants.append(document)
         # print(document)
 
@@ -1402,28 +1731,14 @@ def update_db():
     df_pubref = pd.DataFrame(liste_pubref)
 
     liste_appref = []
-    for document in applicationRef.find():
+    for document in application.find():
         liste_appref.append(document)
         # print(document)
 
     df_appref = pd.DataFrame(liste_appref)
 
-    liste_ext = []
-    for document in extensionPublications.find():
-        liste_ext.append(document)
-        # print(document)
-
-    df_ext = pd.DataFrame(liste_ext)
-
-    liste_ta = []
-    for document in titleAbstract.find():
-        liste_ta.append(document)
-        # print(document)
-
-    df_ta = pd.DataFrame(liste_ta)
-
     liste_gr = []
-    for document in grant.find():
+    for document in granted.find():
         liste_gr.append(document)
         # print(document)
 
@@ -1472,45 +1787,66 @@ def update_db():
     df_err = pd.DataFrame(liste_err)
 
     liste_inscriptions = []
-    for document in inscriptionPublications.find():
+    for document in inscription.find():
         liste_inscriptions.append(document)
         # print(document)
 
     df_ins = pd.DataFrame(liste_inscriptions)
 
     liste_search = []
-    for document in searchPublications.find():
+    for document in search.find():
         liste_search.append(document)
         # print(document)
 
     df_search = pd.DataFrame(liste_search)
 
     liste_amend = []
-    for document in amendedClaims.find():
+    for document in amendedClaim.find():
         liste_amend.append(document)
         # print(document)
 
     df_amended = pd.DataFrame(liste_amend)
 
     liste_cit = []
-    for document in citationPublications.find():
+    for document in citation.find():
         liste_cit.append(document)
         # print(document)
 
     df_citations = pd.DataFrame(liste_cit)
 
     liste_prio = []
-    for document in priorityPublications.find():
+    for document in priority.find():
         liste_prio.append(document)
         # print(document)
 
     df_prio = pd.DataFrame(liste_prio)
 
     liste_rdc = []
-    for document in relatedDocuments.find():
+    for document in relatedDocument.find():
         liste_rdc.append(document)
         # print(document)
 
     df_rdc = pd.DataFrame(liste_rdc)
+
+    liste_oipc = []
+    for document in oldIpc.find():
+        liste_oipc.append(document)
+        # print(document)
+
+    df_oipc = pd.DataFrame(liste_oipc)
+
+    liste_ic = []
+    for document in ipc.find():
+        liste_ic.append(document)
+        # print(document)
+
+    df_ipc = pd.DataFrame(liste_ic)
+
+    liste_cp = []
+    for document in cpc.find():
+        liste_cp.append(document)
+        # print(document)
+
+    df_cpc = pd.DataFrame(liste_cp)
 
     client.close()
