@@ -1,15 +1,14 @@
 import os
-import re
-
-from bs4 import BeautifulSoup
-from datetime import datetime
-from pymongo import MongoClient
-import re
-from deepdiff import DeepDiff
-import pandas as pd
 import random
+import re
+from datetime import datetime
 
-random.seed(1)
+import pandas as pd
+from bs4 import BeautifulSoup
+from deepdiff import DeepDiff
+from pymongo import MongoClient
+
+random.seed(42)
 
 DATA_PATH = "/run/media/julia/DATA/INPI/"
 
@@ -85,12 +84,7 @@ def doc_nb(lmf, ptdoc):
 def stat_pub(lmf, ptdoc):
     global stts
     if "status" in ptdoc.attrs.keys():
-        if ptdoc["status"] in ["PUBDEM"]:
-            stts = "NEW"
-        elif ptdoc["status"] in ["INSCRI", "PUBRRP"]:
-            stts = "AMENDED"
-        else:
-            stts = ptdoc["status"]
+        stts = ptdoc["status"]
     else:
         for item in lmf:
             if "FR_FR" in item:
@@ -248,7 +242,6 @@ def pub_ref(bs, pb_n, ptdoc):
                 dic_pnref["nature"] = "Certificat d\'utilité"
 
         if "date" in tags_item:
-            print(item.find("date").text)
             dae = str(item.find("date").text)
             dic_pnref["date-publication"] = check_date(dae)
 
@@ -258,32 +251,6 @@ def pub_ref(bs, pb_n, ptdoc):
         lste_pbref.append(dic_pnref)
 
     df = pd.DataFrame(data=lste_pbref).drop_duplicates()
-
-    return df
-
-
-def status_list(bs, dic_st):
-    lste_stt = []
-
-    stt = bs.find_all("fr-status")
-
-    if stt:
-        for item in stt:
-            clefs_stt = list(dic_st)
-            if "lang" in item.attrs.keys():
-                dic_st["lang"] = item.attrs["lang"]
-            tags_item = [tag.name for tag in item.find_all()]
-            inter = list(set(clefs_stt).intersection(set(tags_item)))
-            for clef in inter:
-                dic_st[clef] = item.find(clef).text
-            lste_stt.append(dic_st)
-    else:
-        lste_stt.append(dic_st)
-
-    if len(lste_stt) == 0:
-        lste_stt.append(dic_st)
-
-    df = pd.DataFrame(data=lste_stt).drop_duplicates()
 
     return df
 
@@ -315,11 +282,11 @@ def renewal_list(bs, pb_n, ptdoc):
                 for clef in inter:
                     dic_ant[clef] = item.find(clef).text
                 if "date" in tags_item:
-                    print(item.find("date").text)
                     dae = item.find("date").text
                     dic_ant["date-payment"] = check_date(dae)
 
                 liste.append(dic_ant)
+
     if len(liste) == 0:
         dic_ant = {"publication-number": pb_n,
                    "type-payment": "",
@@ -352,7 +319,6 @@ def search_list(bs, pb_n, ptdoc):
                 clefs_dic = list(dic_srch.keys())
                 dic_srch["fr-bopinum"] = item.find("fr-bopinum").text
                 if "date" in [tag.name for tag in item.find_all()]:
-                    print(item.find("date").text)
                     date_search = item.find("date").text
                     dic_srch["date-search"] = check_date(date_search)
 
@@ -383,7 +349,6 @@ def errata_list(bs, dic_er):
             for clef in inter:
                 dic_er[clef] = item.find(clef).text
             if "date" in tags_item:
-                print(item.find("date").text)
                 dae = item.find("date").text
                 dic_er["date-errata"] = check_date(dae)
 
@@ -413,7 +378,7 @@ def amended_list(bs, dic_am):
 
     if am:
         for item in am:
-            dic_am["claims"] = item.text
+            dic_am["claim"] = item.text
             lste_am.append(dic_am)
     else:
         lste_am.append(dic_am)
@@ -439,7 +404,6 @@ def inscr_list(bs, dic_in):
             for clef in inter:
                 dic_in[clef] = item.find(clef).text
             if "date" in tags_item:
-                print(item.find("date").text)
                 dae = item.find("date").text
                 dic_in["date-inscription"] = check_date(dae)
 
@@ -483,7 +447,6 @@ def app_ref(bs, pb_n, ptdoc):
             for clef in inter:
                 dic_apref[clef] = item.find(clef).text
             if "date" in tags_item:
-                print(item.find("date").text)
                 dae = item.find("date").text
                 dic_apref["date-application"] = check_date(dae)
 
@@ -532,9 +495,8 @@ def cit_list(bs, dic_citref):
             if "text" in tags_item:
                 dic_citref["citation"] = item.find("text").text
             if "rel-claims" in tags_item:
-                dic_citref["claims"] = item.find("rel-claims").text
+                dic_citref["claim"] = item.find("rel-claims").text
             if "date" in tags_item:
-                print(item.find("date").text)
                 dae = item.find("date").text
                 dic_citref["date-doc"] = check_date(dae)
 
@@ -576,7 +538,6 @@ def prio_list(bs, pn_b, ptdoc):
             if "doc-number" in tags_item:
                 dic_prio["priority-number"] = item.find("doc-number").text
             if "date" in tags_item:
-                print(item.find("date").text)
                 dae = item.find("date").text
                 dic_prio["date-priority"] = check_date(dae)
 
@@ -634,7 +595,6 @@ def redoc_list(bs, pb_n, ptdoc):
             elif "utility-model-basis" and "parent-doc" in tags_item:
                 dc_rdc["type-related-doc"] = "transformation volontaire du brevet en certificat d\'utilité"
             elif "date" in tags_item:
-                print(item.find("date").text)
                 dae = item.find("date").text
                 dc_rdc["date-document"] = check_date(dae)
             lste_rdc.append(dc_rdc)
@@ -662,7 +622,6 @@ def redoc_list(bs, pb_n, ptdoc):
 
 
 def oldipc_list(bs, pb_n, ptdoc):
-    print("oldipc_list")
     oldipc_ref = bs.find_all("classifications-ipc")
     lste_oipc = []
 
@@ -707,7 +666,6 @@ def oldipc_list(bs, pb_n, ptdoc):
 
 
 def ipc_list(bs, pb_n, ptdoc):
-    print("ipc_list")
     ipc_ref = bs.find_all("classification-ipcr")
     lste_ipc = []
 
@@ -745,7 +703,6 @@ def ipc_list(bs, pb_n, ptdoc):
 
 
 def cpc_list(bs, pb_n, ptdoc):
-    print("cpc_list")
     cpc_ref = bs.find_all("patent-classification")
     lste_cpc = []
 
@@ -786,12 +743,10 @@ def cpc_list(bs, pb_n, ptdoc):
             if "classification-data-source" in tags_item:
                 dc_cpc["source"] = item.find("classification-data-source").text
             if "date" in tags_item:
-                print(item.find("date").text)
                 dae = item.find("date").text
                 dc_cpc["date-cpc"] = check_date(dae)
 
             if "action-date" in tags_item:
-                print(item.find("action-date").find("date").text)
                 dae = item.find("action-date").find("date").text
                 dc_cpc["date-classification"] = check_date(dae)
 
@@ -1014,7 +969,7 @@ def update_db():
 
     client = MongoClient('mongodb://localhost:27017/')
 
-    db = client['bdd_inpi']
+    db = client['inpi']
 
     for item in db.list_collection_names():
         db[item].drop()
@@ -1026,14 +981,6 @@ def update_db():
     publicationRef = db.publicationRef
 
     application = db.application
-
-    granted = db.granted
-
-    refusal = db.refusal
-
-    withdrawal = db.withdrawal
-
-    notificationLapsed = db.notificationLapsed
 
     status = db.status
 
@@ -1100,6 +1047,7 @@ def update_db():
                       "date-produced": date_produced,
                       "publication-number": pub_n,
                       "status": stats,
+                      "fr-nature": "",
                       "fr-extension-territory": "",
                       "title": "",
                       "abstract": "",
@@ -1143,28 +1091,24 @@ def update_db():
                     if "fr-bopinum" in tags_item:
                         dic_pn["fr-bopinum-grant"] = grt.find("fr-bopinum").text
                     if "date" in tags_item:
-                        print(grt.find("date").text)
                         dae = grt.find("date").text
                         dic_pn["date-grant"] = check_date(dae)
 
                 ref = ptlife.find("fr-date-application-refused")
 
                 if ref:
-                    print(ref.find("date").text)
                     dae = ref.find("date").text
                     dic_pn["date-refusal"] = check_date(dae)
 
                 wd = ptlife.find("fr-date-application-withdrawn")
 
                 if wd:
-                    print(wd.find("date").text)
                     dae = wd.find("date").text
                     dic_pn["date-withdrawal"] = check_date(dae)
 
                 lp = ptlife.find("fr-date-notification-lapsed")
 
                 if lp:
-                    print(lp.find("date").text)
                     dae = lp.find("date").text
                     dic_pn["date-lapsed"] = check_date(dae)
                     dic_pn["fr-bopinum-lapsed"] = lp.find("fr-bopinum").text
@@ -1174,7 +1118,11 @@ def update_db():
                            "fr-nature": "",
                            "application-number-fr": pn["id"]}
 
-                stus = status_list(ptlife, dic_stt)
+                stt = ptlife.find("fr-status")
+
+                if stt:
+                    dic_pn["fr-nature"] = stt.find("fr-nature").text
+
                 rnw = renewal_list(ptlife, pub_n, pn)
 
                 dic_errata = {"publication-number": pub_n,
@@ -1199,7 +1147,7 @@ def update_db():
                 sear = search_list(ptlife, pub_n, pn)
 
                 dic_amended = {"publication-number": pub_n,
-                               "claims": "",
+                               "claim": "",
                                "application-number": pn["id"]}
 
                 amend = amended_list(ptlife, dic_amended)
@@ -1211,11 +1159,60 @@ def update_db():
                                  "date-doc": "",
                                  "passage": "",
                                  "category": "",
-                                 "claims": "",
+                                 "claim": "",
                                  "application-number-fr": pn["id"],
                                  "publication-number": pub_n}
 
                 cit = cit_list(ptlife, dic_citations)
+
+            else:
+                stus = pd.DataFrame(data=[{"publication-number": pub_n,
+                                           "lang": "",
+                                           "fr-nature": "",
+                                           "application-number-fr": pn["id"]}])
+
+                rnw = pd.DataFrame(data=[{"publication-number": pub_n,
+                                          "type-payment": "",
+                                          "percentile": "",
+                                          "date-payment": "",
+                                          "amount": "",
+                                          "application-number-fr": pn["id"]}])
+
+                erra = pd.DataFrame(data=[{"publication-number": pub_n,
+                                           "part": "",
+                                           "text": "",
+                                           "date-errata": "",
+                                           "fr-bopinum": "",
+                                           "application-number": pn["id"]}]).drop_duplicates()
+
+                ins = pd.DataFrame(data=[{"publication-number": pub_n,
+                                          "registered-number": "",
+                                          "date-inscription": "",
+                                          "code-inscription": "",
+                                          "nature-inscription": "",
+                                          "fr-bopinum": "",
+                                          "application-number": pn["id"]}]).drop_duplicates()
+
+                sear = pd.DataFrame(data=[{"publication-number": pub_n,
+                                           "type-search": "",
+                                           "date-search": "",
+                                           "fr-bopinum": "",
+                                           "application-number-fr": pn["id"]}]).drop_duplicates()
+
+                amend = pd.DataFrame(data=[{"publication-number": pub_n,
+                                            "claim": "",
+                                            "application-number": pn["id"]}]).drop_duplicates()
+
+                cit = pd.DataFrame(data=[{"type-citation": "",
+                                          "citation": "",
+                                          "country": "",
+                                          "doc-number": "",
+                                          "date-doc": "",
+                                          "passage": "",
+                                          "category": "",
+                                          "claim": "",
+                                          "application-number-fr": pn["id"],
+                                          "publication-number": pub_n}]).drop_duplicates()
 
             dic_pn = pd.DataFrame(data=[dic_pn]).drop_duplicates()
 
@@ -1256,20 +1253,26 @@ def update_db():
                 pub_id = publication.insert_one(dic_pn.to_dict("records")[0]).inserted_id
             else:
                 for res in mydoc:
-                    diff = DeepDiff(res, dic_pn.to_dict("records")[0])
-                    if len(diff) > 0:
-                        if "values_changed" in diff.keys():
-                            d = diff["values_changed"]
-                            ks = list(d.keys())
-                            tks = []
-                            for k in ks:
-                                k = k.replace("root['", "")
-                                k = k.replace("']", "")
-                                tks.append(k)
+                    for clef in ["title", "abstract"]:
+                        if clef in res.keys():
+                            if dic_pn[clef].item() != "":
+                                if res[clef] == "":
+                                    del res[clef]
+                    if res:
+                        diff = DeepDiff(res, dic_pn.to_dict("records")[0])
+                        if len(diff) > 0:
+                            if "values_changed" in diff.keys():
+                                d = diff["values_changed"]
+                                ks = list(d.keys())
+                                tks = []
+                                for k in ks:
+                                    k = k.replace("root['", "")
+                                    k = k.replace("']", "")
+                                    tks.append(k)
 
-                            for k in tks:
-                                nwval = {"$set": {k: dic_pn[k].item()}}
-                                x = publication.update_many(qr, nwval, upsert=True)
+                                for k in tks:
+                                    nwval = {"$set": {k: dic_pn[k].item()}}
+                                    x = publication.update_many(qr, nwval, upsert=True)
 
         if len(appl) > 0:
             liste_app.append(appl)
@@ -1501,7 +1504,7 @@ def update_db():
             liste_amended.append(amend)
             for _, ame in amend.iterrows():
                 qr = {"publication-number": ame["publication-number"],
-                      "claims": ame["claims"]}
+                      "claim": ame["claim"]}
                 mydoc = list(amendedClaim.find(qr))
                 if len(mydoc) == 0:
                     ame_id = amendedClaim.insert_one(ame.to_dict()).inserted_id
@@ -1534,7 +1537,7 @@ def update_db():
                       "date-doc": ct["date-doc"],
                       "passage": ct["passage"],
                       "category": ct["category"],
-                      "claims": ct["claims"]
+                      "claim": ct["claim"]
                       }
                 mydoc = list(citation.find(qr))
                 if len(mydoc) == 0:
@@ -1736,34 +1739,6 @@ def update_db():
         # print(document)
 
     df_appref = pd.DataFrame(liste_appref)
-
-    liste_gr = []
-    for document in granted.find():
-        liste_gr.append(document)
-        # print(document)
-
-    df_gr = pd.DataFrame(liste_gr)
-
-    liste_rf = []
-    for document in refusal.find():
-        liste_rf.append(document)
-        # print(document)
-
-    df_rf = pd.DataFrame(liste_rf)
-
-    liste_wid = []
-    for document in withdrawal.find():
-        liste_wid.append(document)
-        # print(document)
-
-    df_wid = pd.DataFrame(liste_wid)
-
-    liste_lps = []
-    for document in notificationLapsed.find():
-        liste_lps.append(document)
-        # print(document)
-
-    df_lps = pd.DataFrame(liste_lps)
 
     liste_sts = []
     for document in status.find():
