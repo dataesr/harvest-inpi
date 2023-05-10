@@ -982,8 +982,6 @@ def update_db():
 
     application = db.application
 
-    status = db.status
-
     renewal = db.renewal
 
     errata = db.errata
@@ -1232,7 +1230,6 @@ def update_db():
             appl = pd.DataFrame(data=[])
             pref = pd.DataFrame(data=[])
             aref = pd.DataFrame(data=[])
-            stus = pd.DataFrame(data=[])
             rnw = pd.DataFrame(data=[])
             erra = pd.DataFrame(data=[])
             ins = pd.DataFrame(data=[])
@@ -1364,30 +1361,6 @@ def update_db():
                                 for k in tks:
                                     nwval = {"$set": {k: ar[k]}}
                                     x = application.update_many(qr, nwval, upsert=True)
-
-        if len(stus) > 0:
-            liste_status.append(stus)
-            for _, st in stus.iterrows():
-                qr = {"publication-number": st["publication-number"]}
-                mydoc = list(status.find(qr))
-                if len(mydoc) == 0:
-                    stt_id = status.insert_one(st.to_dict()).inserted_id
-                else:
-                    for res in mydoc:
-                        diff = DeepDiff(res, st.to_dict())
-                        if len(diff) > 0:
-                            if "values_changed" in diff.keys():
-                                d = diff["values_changed"]
-                                ks = list(d.keys())
-                                tks = []
-                                for k in ks:
-                                    k = k.replace("root['", "")
-                                    k = k.replace("']", "")
-                                    tks.append(k)
-
-                                for k in tks:
-                                    nwval = {"$set": {k: st[k]}}
-                                    x = status.update_many(qr, nwval, upsert=True)
 
         if len(rnw) > 0:
             liste_renewal.append(rnw)
@@ -1739,13 +1712,6 @@ def update_db():
         # print(document)
 
     df_appref = pd.DataFrame(liste_appref)
-
-    liste_sts = []
-    for document in status.find():
-        liste_sts.append(document)
-        # print(document)
-
-    df_status = pd.DataFrame(liste_sts)
 
     liste_rnw = []
     for document in renewal.find():
