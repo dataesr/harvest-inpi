@@ -178,8 +178,12 @@ def unzip():
 
                 prefix = f"{clef}{item}".replace(DATA_PATH, "")
 
-                response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-                print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                try:
+                    response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+                    print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                except boto3.exceptions.S3UploadFailedError as error:
+                    print(error.response, flush=True)
+                    raise error
 
                 conn.close()
 
@@ -226,8 +230,12 @@ def unzip():
 
                 prefix = f"{clef}{item}".replace(DATA_PATH, "")
 
-                response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-                print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                try:
+                    response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+                    print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                except boto3.exceptions.S3UploadFailedError as error:
+                    print(error.response, flush=True)
+                    raise error
 
                 conn.close()
 
@@ -268,8 +276,12 @@ def unzip():
 
                     prefix = f"{folder}".replace(DATA_PATH, "")
 
-                    response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
-                    print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
+                    try:
+                        response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
+                        print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
+                    except boto3.exceptions.S3UploadFailedError as error:
+                        print(error.response, flush=True)
+                        raise error
 
                     conn.close()
             os.remove(item)
@@ -323,8 +335,12 @@ def unzip():
 
             prefix = f"{fannee}/{folder}".replace(DATA_PATH, "")
 
-            response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-            print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+            try:
+                response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+                print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+            except boto3.exceptions.S3UploadFailedError as error:
+                print(error.response, flush=True)
+                raise error
 
             conn.close()
 
@@ -383,8 +399,12 @@ def unzip():
 
                 prefix = f"{clef}{item}".replace(DATA_PATH, "")
 
-                response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-                print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                try:
+                    response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+                    print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                except boto3.exceptions.S3UploadFailedError as error:
+                    print(error.response, flush=True)
+                    raise error
 
                 conn.close()
 
@@ -414,8 +434,12 @@ def unzip():
 
                     prefix = folder.replace(DATA_PATH, "")
 
-                    response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
-                    print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
+                    try:
+                        response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
+                        print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
+                    except boto3.exceptions.S3UploadFailedError as error:
+                        print(error.response, flush=True)
+                        raise error
 
                     conn.close()
                     if os.path.isdir(f"{folder}/doc/"):
