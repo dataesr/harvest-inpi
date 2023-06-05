@@ -20,10 +20,10 @@ def create_task_all(args):
 
 
 def harvest_inpi():
-    # p00_ftp_inpi.loading()
-    # logger.debug("chargement de la dernière version complète de la DB de l'INPI")
-    # p01_unzip_inpi.unzip()
-    # logger.debug("dezippage des fichiers zippés et chargement dans ObjectStorage")
+    p00_ftp_inpi.loading()
+    logger.debug("chargement de la dernière version complète de la DB de l'INPI")
+    p01_unzip_inpi.unzip()
+    logger.debug("dezippage des fichiers zippés et chargement dans ObjectStorage")
     p02_lecture_xml.update_db()
     logger.debug("alimentation de la base mongo inpi")
 
