@@ -8,6 +8,7 @@ import re
 import shutil
 import tarfile
 import boto3
+from inpi import p02_lecture_xml as p02
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
@@ -181,6 +182,8 @@ def unzip():
                 try:
                     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
                     print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                    data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get("Body").read().decode()
+                    p02.update_db(f"{prefix}/{fichier}", data)
                 except boto3.exceptions.S3UploadFailedError as error:
                     print(error.response, flush=True)
                     raise error
@@ -233,6 +236,8 @@ def unzip():
                 try:
                     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
                     print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                    data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get("Body").read().decode()
+                    p02.update_db(f"{prefix}/{fichier}", data)
                 except boto3.exceptions.S3UploadFailedError as error:
                     print(error.response, flush=True)
                     raise error
@@ -279,6 +284,9 @@ def unzip():
                     try:
                         response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
                         print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
+                        data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fil}").get(
+                            "Body").read().decode()
+                        p02.update_db(f"{prefix}/{fil}", data)
                     except boto3.exceptions.S3UploadFailedError as error:
                         print(error.response, flush=True)
                         raise error
@@ -338,6 +346,9 @@ def unzip():
             try:
                 response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
                 print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get(
+                    "Body").read().decode()
+                p02.update_db(f"{prefix}/{fichier}", data)
             except boto3.exceptions.S3UploadFailedError as error:
                 print(error.response, flush=True)
                 raise error
@@ -402,6 +413,9 @@ def unzip():
                 try:
                     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
                     print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                    data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get(
+                        "Body").read().decode()
+                    p02.update_db(f"{prefix}/{fichier}", data)
                 except boto3.exceptions.S3UploadFailedError as error:
                     print(error.response, flush=True)
                     raise error
@@ -437,6 +451,9 @@ def unzip():
                     try:
                         response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
                         print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
+                        data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fil}").get(
+                            "Body").read().decode()
+                        p02.update_db(f"{prefix}/{fil}", data)
                     except boto3.exceptions.S3UploadFailedError as error:
                         print(error.response, flush=True)
                         raise error
