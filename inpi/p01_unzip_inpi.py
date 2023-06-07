@@ -7,8 +7,10 @@ import zipfile
 import re
 import shutil
 import tarfile
-import boto3
+# import boto3
 from inpi import p02_lecture_xml as p02
+from pymongo import MongoClient
+
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
@@ -39,6 +41,7 @@ def unzip():
         os.remove('Biblio_FR_Stock.tar')
 
     # get all the full data paths
+    new_complete = []
     paths = []
     folders = os.listdir(DATA_PATH)
     for folder in folders:
@@ -171,24 +174,29 @@ def unzip():
             os.remove(clef + item + ".zip")
             new = os.listdir(clef + item)
             for fichier in new:
-                conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                                    endpoint_url=os.getenv("ENDPOINT_URL"))
+                # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                #                     endpoint_url=os.getenv("ENDPOINT_URL"))
 
                 dirpath = os.path.join(clef, item, fichier)
+                new_complete.append(dirpath)
 
-                prefix = f"{clef}{item}".replace(DATA_PATH, "")
+                # prefix = f"{clef}{item}".replace(DATA_PATH, "")
 
-                try:
-                    response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-                    print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
-                    data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get("Body").read().decode()
-                    p02.update_db(f"{prefix}/{fichier}", data)
-                except boto3.exceptions.S3UploadFailedError as error:
-                    print(error.response, flush=True)
-                    raise error
+                # try:
+                #     # response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+                #     # print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                #     # data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get("Body").read().decode()
+                #     with open(dirpath, "r") as f:
+                #         data = f.read()
+                #     p02.update_db(dirpath, data)
+                # except boto3.exceptions.S3UploadFailedError as error:
+                #     print(error.response, flush=True)
+                #     raise error
+                # except:
+                #     print("erreur de chargement")
 
-                conn.close()
+                # conn.close()
 
     #####################################################################################################
 
@@ -225,24 +233,25 @@ def unzip():
             os.remove(clef + item + ".zip")
             new = os.listdir(clef + item)
             for fichier in new:
-                conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                                    endpoint_url=os.getenv("ENDPOINT_URL"))
+                # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                #                     endpoint_url=os.getenv("ENDPOINT_URL"))
 
                 dirpath = os.path.join(clef, item, fichier)
+                new_complete.append(dirpath)
 
-                prefix = f"{clef}{item}".replace(DATA_PATH, "")
-
-                try:
-                    response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-                    print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
-                    data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get("Body").read().decode()
-                    p02.update_db(f"{prefix}/{fichier}", data)
-                except boto3.exceptions.S3UploadFailedError as error:
-                    print(error.response, flush=True)
-                    raise error
-
-                conn.close()
+                # prefix = f"{clef}{item}".replace(DATA_PATH, "")
+                #
+                # try:
+                #     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+                #     print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                #     data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get("Body").read().decode()
+                #     p02.update_db(f"{prefix}/{fichier}", data)
+                # except boto3.exceptions.S3UploadFailedError as error:
+                #     print(error.response, flush=True)
+                #     raise error
+                #
+                # conn.close()
 
     #####################################################################################################
 
@@ -273,25 +282,26 @@ def unzip():
                     folder = item.replace(".zip", "")
                     shutil.move(path + fil, folder)
                     shutil.rmtree(f"{folder}/doc/")
-                    conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                                        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                                        endpoint_url=os.getenv("ENDPOINT_URL"))
+                    # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                    #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                    #                     endpoint_url=os.getenv("ENDPOINT_URL"))
 
                     dirpath = os.path.join(folder, fil)
+                    new_complete.append(dirpath)
 
-                    prefix = f"{folder}".replace(DATA_PATH, "")
-
-                    try:
-                        response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
-                        print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
-                        data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fil}").get(
-                            "Body").read().decode()
-                        p02.update_db(f"{prefix}/{fil}", data)
-                    except boto3.exceptions.S3UploadFailedError as error:
-                        print(error.response, flush=True)
-                        raise error
-
-                    conn.close()
+                    # prefix = f"{folder}".replace(DATA_PATH, "")
+                    #
+                    # try:
+                    #     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
+                    #     print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
+                    #     data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fil}").get(
+                    #         "Body").read().decode()
+                    #     p02.update_db(f"{prefix}/{fil}", data)
+                    # except boto3.exceptions.S3UploadFailedError as error:
+                    #     print(error.response, flush=True)
+                    #     raise error
+                    #
+                    # conn.close()
             os.remove(item)
 
     #####################################################################################################
@@ -335,25 +345,26 @@ def unzip():
         shutil.move(folder, fannee)
         new = os.listdir(fannee + "/" + folder)
         for fichier in new:
-            conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                                aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                                endpoint_url=os.getenv("ENDPOINT_URL"))
+            # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            #                     endpoint_url=os.getenv("ENDPOINT_URL"))
 
             dirpath = os.path.join(fannee, folder, fichier)
+            new_complete.append(dirpath)
 
-            prefix = f"{fannee}/{folder}".replace(DATA_PATH, "")
-
-            try:
-                response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-                print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
-                data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get(
-                    "Body").read().decode()
-                p02.update_db(f"{prefix}/{fichier}", data)
-            except boto3.exceptions.S3UploadFailedError as error:
-                print(error.response, flush=True)
-                raise error
-
-            conn.close()
+            # prefix = f"{fannee}/{folder}".replace(DATA_PATH, "")
+            #
+            # try:
+            #     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+            #     print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+            #     data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get(
+            #         "Body").read().decode()
+            #     p02.update_db(f"{prefix}/{fichier}", data)
+            # except boto3.exceptions.S3UploadFailedError as error:
+            #     print(error.response, flush=True)
+            #     raise error
+            #
+            # conn.close()
 
     #####################################################################################################
 
@@ -402,25 +413,26 @@ def unzip():
             os.remove(clef + item + ".zip")
             new = os.listdir(clef + item)
             for fichier in new:
-                conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                                    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                                    endpoint_url=os.getenv("ENDPOINT_URL"))
+                # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                #                     endpoint_url=os.getenv("ENDPOINT_URL"))
 
                 dirpath = os.path.join(clef, item, fichier)
+                new_complete.append(dirpath)
 
-                prefix = f"{clef}{item}".replace(DATA_PATH, "")
-
-                try:
-                    response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-                    print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
-                    data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get(
-                        "Body").read().decode()
-                    p02.update_db(f"{prefix}/{fichier}", data)
-                except boto3.exceptions.S3UploadFailedError as error:
-                    print(error.response, flush=True)
-                    raise error
-
-                conn.close()
+                # prefix = f"{clef}{item}".replace(DATA_PATH, "")
+                #
+                # try:
+                #     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
+                #     print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
+                #     data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get(
+                #         "Body").read().decode()
+                #     p02.update_db(f"{prefix}/{fichier}", data)
+                # except boto3.exceptions.S3UploadFailedError as error:
+                #     print(error.response, flush=True)
+                #     raise error
+                #
+                # conn.close()
 
     #####################################################################################################
 
@@ -440,25 +452,41 @@ def unzip():
                     if not os.path.isdir(folder):
                         os.makedirs(folder)
                     shutil.move(clef + fil, folder)
-                    conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                                        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                                        endpoint_url=os.getenv("ENDPOINT_URL"))
+                    # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                    #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                    #                     endpoint_url=os.getenv("ENDPOINT_URL"))
 
                     dirpath = os.path.join(folder, fil)
+                    new_complete.append(dirpath)
 
-                    prefix = folder.replace(DATA_PATH, "")
-
-                    try:
-                        response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
-                        print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
-                        data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fil}").get(
-                            "Body").read().decode()
-                        p02.update_db(f"{prefix}/{fil}", data)
-                    except boto3.exceptions.S3UploadFailedError as error:
-                        print(error.response, flush=True)
-                        raise error
-
-                    conn.close()
+                    # prefix = folder.replace(DATA_PATH, "")
+                    #
+                    # try:
+                    #     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
+                    #     print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
+                    #     data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fil}").get(
+                    #         "Body").read().decode()
+                    #     p02.update_db(f"{prefix}/{fil}", data)
+                    # except boto3.exceptions.S3UploadFailedError as error:
+                    #     print(error.response, flush=True)
+                    #     raise error
+                    #
+                    # conn.close()
                     if os.path.isdir(f"{folder}/doc/"):
                         shutil.rmtree(f"{folder}/doc/")
                 os.remove(item)
+
+    #####################################################################################################
+
+    # load files into INPI db
+    client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
+    print(client.server_info(), flush=True)
+
+    db = client['inpi']
+    for item in db.list_collection_names():
+        db[item].drop()
+    new_complete.sort()
+    for file in new_complete:
+        with open(file, "r") as f:
+            data = f.read()
+        p02.update_db(file, data)
