@@ -1452,7 +1452,6 @@ def update_db(file_name: str, data_xml: str):
     if len(cpcs) > 0:
         liste_cpc.append(cpcs)
         for _, cp in cpcs.iterrows():
-            did = db.cpc.drop_indexes()
             qr = {"sequence": cp["sequence"],
                   "scheme": cp["scheme"],
                   "office": cp["office"],
