@@ -24,14 +24,15 @@ def unzip():
     some are inside another folder named doc...
     :return:
     """
-    os.chdir(DATA_PATH)
+    PATH = os.path.join(DATA_PATH, "INPI")
+    os.chdir(PATH)
 
     # list all the folders
-    list_dir = os.listdir(DATA_PATH)
+    list_dir = os.listdir(PATH)
     # remove .zip from the name of the folders and get a list of the unique names
     list_dir = list(set(map(lambda a: re.sub(r"\.zip", "", a), list_dir)))
     list_dir.sort()
-    dir2 = os.listdir(DATA_PATH)
+    dir2 = os.listdir(PATH)
 
     # unzip data pre-2017 if not already done
     if 'Biblio_FR_Stock.tar' in list_dir:
@@ -43,10 +44,10 @@ def unzip():
     # get all the full data paths
     new_complete = []
     paths = []
-    folders = os.listdir(DATA_PATH)
+    folders = os.listdir(PATH)
     for folder in folders:
         if os.path.isdir(folder):
-            paths.append(DATA_PATH + folder + "/")
+            paths.append(PATH + folder + "/")
 
     paths.sort()
 
@@ -320,7 +321,7 @@ def unzip():
         an = annee(dos)
         nom = dos.replace(".zip", "")
         if an in paths:
-            ldos = os.listdir(DATA_PATH + an + "/")
+            ldos = os.listdir(PATH + an + "/")
             if nom in ldos:
                 dossiers_zip.remove(dos)
 
@@ -339,7 +340,7 @@ def unzip():
                 shutil.move(fil, folder)
                 shutil.rmtree(f"{folder}/doc/")
         os.remove(file)
-        fannee = DATA_PATH + annee
+        fannee = PATH + annee
         if not os.path.isdir(fannee):
             os.makedirs(fannee)
         shutil.move(folder, fannee)

@@ -128,7 +128,10 @@ def loading_file(ftp_handle, file):
 
 
 def loading():
-    os.chdir(DATA_PATH)
+    # os.chdir(DATA_PATH)
+    os.system(f'mkdir -p {DATA_PATH}/INPI')
+    path = os.path.join(DATA_PATH, "INPI")
+    os.chdir(path)
     # check which directories are already present
     present = os.listdir()
 
@@ -153,7 +156,7 @@ def loading():
     # load the folders we are interested in
     if len(year_load) > 0:
         for i in year_load:
-            download_ftp_tree(ftp_server, i, f"{DATA_PATH}", pattern=None, overwrite=False,
+            download_ftp_tree(ftp_server, i, f"{path}", pattern=None, overwrite=False,
                               guess_by_extension=True)
 
     # load the folder with data prior 2017
@@ -188,7 +191,7 @@ def loading():
         if not rest_present:
             if rest_years2:
                 for nom in rest_years2:
-                    if nom not in os.listdir(f"{DATA_PATH}{anmax}"):
+                    if nom not in os.listdir(f"{path}{anmax}"):
                         print(nom)
                         loading_file(ftp_server, nom + ".zip")
         else:
@@ -200,8 +203,8 @@ def loading():
         if not rest_present:
             if rest_years2:
                 for nom in rest_years2:
-                    if os.path.exists(f"{DATA_PATH}{annee}"):
-                        if nom not in os.listdir(f"{DATA_PATH}{annee}"):
+                    if os.path.exists(f"{path}{annee}"):
+                        if nom not in os.listdir(f"{path}{annee}"):
                             print(nom)
                             loading_file(ftp_server, nom + ".zip")
                     else:
