@@ -123,14 +123,14 @@ def remove_zip(liste: list) -> list:
 
 
 def loading_file(ftp_handle, file):
-    with open(f"{DATA_PATH}{file}", 'wb') as f:
+    with open(f"{DATA_PATH}/INPI/{file}", 'wb') as f:
         ftp_handle.retrbinary(f"RETR {file}", f.write)
 
 
 def loading():
     # os.chdir(DATA_PATH)
     os.system(f'mkdir -p {DATA_PATH}/INPI')
-    path = os.path.join(DATA_PATH, "INPI")
+    path = os.path.join(DATA_PATH, "INPI/")
     os.chdir(path)
     # check which directories are already present
     present = os.listdir()
@@ -191,7 +191,8 @@ def loading():
         if not rest_present:
             if rest_years2:
                 for nom in rest_years2:
-                    if nom not in os.listdir(f"{path}{anmax}"):
+                    print(os.listdir(f"{path}"))
+                    if nom not in os.listdir(f"{path}"):
                         print(nom)
                         loading_file(ftp_server, nom + ".zip")
         else:
