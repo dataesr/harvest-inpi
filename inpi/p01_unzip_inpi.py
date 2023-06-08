@@ -24,7 +24,7 @@ def unzip():
     some are inside another folder named doc...
     :return:
     """
-    PATH = os.path.join(DATA_PATH, "INPI")
+    PATH = os.path.join(DATA_PATH, "INPI/")
     os.chdir(PATH)
 
     # list all the folders
