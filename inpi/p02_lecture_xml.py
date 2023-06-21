@@ -1486,3 +1486,339 @@ def update_db(file_name: str, data_xml: str):
                                 x = cpc.update_many(qr, nwval, upsert=True)
 
     client.close()
+
+
+def update_db_new(file_name: str, data_xml: str):
+    os.chdir(DATA_PATH)
+
+    list_dir = os.listdir(DATA_PATH)
+    list_dir.sort()
+
+    client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
+    print(client.server_info(), flush=True)
+
+    db = client['inpi']
+
+    publication = db.publication
+
+    person = db.person
+
+    publicationRef = db.publicationRef
+
+    application = db.application
+
+    renewal = db.renewal
+
+    errata = db.errata
+
+    inscription = db.inscription
+
+    search = db.search
+
+    amendedClaim = db.amendedClaim
+
+    citation = db.citation
+
+    priority = db.priority
+
+    relatedDocument = db.relatedDocument
+
+    oldIpc = db.oldIpc
+
+    ipc = db.ipc
+
+    cpc = db.cpc
+
+    liste_pn = []
+    liste_app = []
+    liste_pbref = []
+    liste_apref = []
+    liste_renewal = []
+    liste_errata = []
+    liste_ins = []
+    liste_search = []
+    liste_amended = []
+    liste_citation = []
+    liste_priority = []
+    liste_redoc = []
+    liste_oldipc = []
+    liste_ipc = []
+    liste_cpc = []
+
+    elem_file = file_name.split("/")
+    if len(data_xml) > 0:
+        bs_data = BeautifulSoup(data_xml, "xml")
+        pn = bs_data.find("fr-patent-document")
+        date_produced = date_pub_ref(elem_file, pn)
+        pub_n = doc_nb(elem_file, pn)
+
+        stats = stat_pub(elem_file, pn)
+
+        dic_pn = {"lang": pn["lang"],
+                  "application-number-fr": pn["id"],
+                  "country": pn["country"],
+                  "date-produced": date_produced,
+                  "publication-number": pub_n,
+                  "status": stats,
+                  "fr-nature": "",
+                  "fr-extension-territory": "",
+                  "title": "",
+                  "abstract": "",
+                  "kind-grant": "",
+                  "date-grant": "",
+                  "fr-bopinum-grant": "",
+                  "date-refusal": "",
+                  "date-withdrawal": "",
+                  "date-lapsed": "",
+                  "fr-bopinum-lapsed": ""
+                  }
+
+        ex = bs_data.find("fr-extension")
+
+        if ex:
+            if ex.find("fr-extension-territory"):
+                dic_pn["fr-extension-territory"] = ex.find("fr-extension-territory").text
+
+        tit = bs_data.find("invention-title")
+        abst = bs_data.find("abstract")
+        if tit:
+            dic_pn["title"] = tit.text.lstrip().rstrip()
+        if abst:
+            dic_pn["abstract"] = abst.text.lstrip().rstrip()
+
+        appl = person_ref(bs_data, pub_n, pn)
+
+        pref = pub_ref(bs_data, pub_n, pn)
+
+        aref = app_ref(bs_data, pub_n, pn)
+
+        ptlife = bs_data.find("fr-patent-life")
+
+        if ptlife:
+            grt = ptlife.find("fr-date-granted")
+
+            if grt:
+                tags_item = [tag.name for tag in grt.find_all()]
+                if "kind" in tags_item:
+                    dic_pn["kind-grant"] = grt.find("kind").text
+                if "fr-bopinum" in tags_item:
+                    dic_pn["fr-bopinum-grant"] = grt.find("fr-bopinum").text
+                if "date" in tags_item:
+                    dae = grt.find("date").text
+                    dic_pn["date-grant"] = check_date(dae)
+
+            ref = ptlife.find("fr-date-application-refused")
+
+            if ref:
+                dae = ref.find("date").text
+                dic_pn["date-refusal"] = check_date(dae)
+
+            wd = ptlife.find("fr-date-application-withdrawn")
+
+            if wd:
+                dae = wd.find("date").text
+                dic_pn["date-withdrawal"] = check_date(dae)
+
+            lp = ptlife.find("fr-date-notification-lapsed")
+
+            if lp:
+                dae = lp.find("date").text
+                dic_pn["date-lapsed"] = check_date(dae)
+                dic_pn["fr-bopinum-lapsed"] = lp.find("fr-bopinum").text
+
+            stt = ptlife.find("fr-status")
+
+            if stt:
+                dic_pn["fr-nature"] = stt.find("fr-nature").text
+
+            rnw = renewal_list(ptlife, pub_n, pn)
+
+            dic_errata = {"publication-number": pub_n,
+                          "part": "",
+                          "text": "",
+                          "date-errata": "",
+                          "fr-bopinum": "",
+                          "application-number": pn["id"]}
+
+            erra = errata_list(ptlife, dic_errata)
+
+            dic_ins = {"publication-number": pub_n,
+                       "registered-number": "",
+                       "date-inscription": "",
+                       "code-inscription": "",
+                       "nature-inscription": "",
+                       "fr-bopinum": "",
+                       "application-number": pn["id"]}
+
+            ins = inscr_list(ptlife, dic_ins)
+
+            sear = search_list(ptlife, pub_n, pn)
+
+            dic_amended = {"publication-number": pub_n,
+                           "claim": "",
+                           "application-number": pn["id"]}
+
+            amend = amended_list(ptlife, dic_amended)
+
+            dic_citations = {"type-citation": "",
+                             "citation": "",
+                             "country": "",
+                             "doc-number": "",
+                             "date-doc": "",
+                             "passage": "",
+                             "category": "",
+                             "claim": "",
+                             "application-number-fr": pn["id"],
+                             "publication-number": pub_n}
+
+            cit = cit_list(ptlife, dic_citations)
+
+        else:
+            rnw = pd.DataFrame(data=[{"publication-number": pub_n,
+                                      "type-payment": "",
+                                      "percentile": "",
+                                      "date-payment": "",
+                                      "amount": "",
+                                      "application-number-fr": pn["id"]}])
+
+            erra = pd.DataFrame(data=[{"publication-number": pub_n,
+                                       "part": "",
+                                       "text": "",
+                                       "date-errata": "",
+                                       "fr-bopinum": "",
+                                       "application-number": pn["id"]}]).drop_duplicates()
+
+            ins = pd.DataFrame(data=[{"publication-number": pub_n,
+                                      "registered-number": "",
+                                      "date-inscription": "",
+                                      "code-inscription": "",
+                                      "nature-inscription": "",
+                                      "fr-bopinum": "",
+                                      "application-number": pn["id"]}]).drop_duplicates()
+
+            sear = pd.DataFrame(data=[{"publication-number": pub_n,
+                                       "type-search": "",
+                                       "date-search": "",
+                                       "fr-bopinum": "",
+                                       "application-number-fr": pn["id"]}]).drop_duplicates()
+
+            amend = pd.DataFrame(data=[{"publication-number": pub_n,
+                                        "claim": "",
+                                        "application-number": pn["id"]}]).drop_duplicates()
+
+            cit = pd.DataFrame(data=[{"type-citation": "",
+                                      "citation": "",
+                                      "country": "",
+                                      "doc-number": "",
+                                      "date-doc": "",
+                                      "passage": "",
+                                      "category": "",
+                                      "claim": "",
+                                      "application-number-fr": pn["id"],
+                                      "publication-number": pub_n}]).drop_duplicates()
+
+        dic_pn = pd.DataFrame(data=[dic_pn]).drop_duplicates()
+
+        prio = prio_list(bs_data, pub_n, pn)
+
+        redoc = redoc_list(bs_data, pub_n, pn)
+
+        oldipc = oldipc_list(bs_data, pub_n, pn)
+
+        ipcs = ipc_list(bs_data, pub_n, pn)
+
+        cpcs = cpc_list(bs_data, pub_n, pn)
+
+
+    else:
+        dic_pn = pd.DataFrame(data=[])
+        appl = pd.DataFrame(data=[])
+        pref = pd.DataFrame(data=[])
+        aref = pd.DataFrame(data=[])
+        rnw = pd.DataFrame(data=[])
+        erra = pd.DataFrame(data=[])
+        ins = pd.DataFrame(data=[])
+        sear = pd.DataFrame(data=[])
+        amend = pd.DataFrame(data=[])
+        cit = pd.DataFrame(data=[])
+        prio = pd.DataFrame(data=[])
+        redoc = pd.DataFrame(data=[])
+        oldipc = pd.DataFrame(data=[])
+        ipcs = pd.DataFrame(data=[])
+        cpcs = pd.DataFrame(data=[])
+
+    if len(dic_pn) > 0:
+        pub_id = publication.insert_one(dic_pn.to_dict("records")[0]).inserted_id
+
+    if len(appl) > 0:
+        liste_app.append(appl)
+        for _, app in appl.iterrows():
+            app_id = person.insert_one(app.to_dict()).inserted_id
+
+    if len(pref) > 0:
+        liste_pbref.append(pref)
+        for _, pr in pref.iterrows():
+            pr_id = publicationRef.insert_one(pr.to_dict()).inserted_id
+
+    if len(aref) > 0:
+        liste_apref.append(aref)
+        for _, ar in aref.iterrows():
+            ar_id = application.insert_one(ar.to_dict()).inserted_id
+
+    if len(rnw) > 0:
+        liste_renewal.append(rnw)
+        for _, rn in rnw.iterrows():
+            rnw_id = renewal.insert_one(rn.to_dict()).inserted_id
+
+    if len(erra) > 0:
+        liste_errata.append(erra)
+        for _, ert in erra.iterrows():
+            err_id = errata.insert_one(ert.to_dict()).inserted_id
+
+    if len(ins) > 0:
+        liste_ins.append(ins)
+        for _, insc in ins.iterrows():
+            ins_id = inscription.insert_one(insc.to_dict()).inserted_id
+
+    if len(sear) > 0:
+        liste_search.append(sear)
+        for _, ser in sear.iterrows():
+            ser_id = search.insert_one(ser.to_dict()).inserted_id
+
+    if len(amend) > 0:
+        liste_amended.append(amend)
+        for _, ame in amend.iterrows():
+            ame_id = amendedClaim.insert_one(ame.to_dict()).inserted_id
+
+    if len(cit) > 0:
+        liste_citation.append(cit)
+        for _, ct in cit.iterrows():
+            cit_id = citation.insert_one(ct.to_dict()).inserted_id
+
+    if len(prio) > 0:
+        liste_priority.append(prio)
+        for _, pri in prio.iterrows():
+            prio_id = priority.insert_one(pri.to_dict()).inserted_id
+
+    if len(redoc) > 0:
+        liste_redoc.append(redoc)
+        for _, rdc in redoc.iterrows():
+            rdc_id = relatedDocument.insert_one(rdc.to_dict()).inserted_id
+
+    if len(oldipc) > 0:
+        liste_oldipc.append(oldipc)
+        for _, oipc in oldipc.iterrows():
+            oipc_id = oldIpc.insert_one(oipc.to_dict()).inserted_id
+
+    if len(ipcs) > 0:
+        liste_ipc.append(ipcs)
+        for _, ip in ipcs.iterrows():
+            ipc_id = ipc.insert_one(ip.to_dict()).inserted_id
+
+    if len(cpcs) > 0:
+        liste_cpc.append(cpcs)
+        for _, cp in cpcs.iterrows():
+            cpc_id = cpc.insert_one(cp.to_dict()).inserted_id
+
+    client.close()
+
