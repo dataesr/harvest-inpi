@@ -7,7 +7,13 @@ import zipfile
 import re
 import shutil
 import tarfile
-# import boto3
+import boto3
+import pandas as pd
+import logging
+import threading
+import sys
+import concurrent.futures
+
 from inpi import p02_lecture_xml as p02
 from pymongo import MongoClient
 
@@ -15,6 +21,100 @@ from pymongo import MongoClient
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
+
+def get_logger(name):
+    """
+    This function helps to follow the execution of the parallel computation.
+    """
+    loggers = {}
+    if name in loggers:
+        return loggers[name]
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    fmt = '%(asctime)s - %(threadName)s - %(levelname)s - %(message)s'
+    formatter = logging.Formatter(fmt)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    loggers[name] = logger
+    return loggers[name]
+
+
+def subset_df(df: pd.DataFrame) -> dict:
+    """
+    This function divides the initial df into subsets which represent ca. 10 % of the original df.
+    The subsets are put into a dictionary with 10-11 pairs key-value.
+    Each key is the df subset name and each value is the df subset.
+    """
+    prct10 = int(round(len(df) * 10 / 100, 0))
+    dict_nb = {}
+    deb = 0
+    fin = prct10
+    dict_nb["df1"] = df.iloc[deb:fin, :]
+    deb = fin
+    dixieme = 10 * prct10
+    reste = (len(df) - dixieme)
+    fin_reste = len(df) + 1
+    for i in range(2, 11):
+        fin = (i * prct10 + 1)
+        dict_nb["df" + str(i)] = df.iloc[deb:fin, :]
+        if reste > 0:
+            if len(df.iloc[fin: fin_reste, :]) > 0:
+                dict_nb["reste"] = df.iloc[fin: fin_reste, :]
+        deb = fin
+
+    return dict_nb
+
+
+def req_xml_aws(df: pd.DataFrame):
+    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
+    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                         endpoint_url=os.getenv("ENDPOINT_URL"))
+
+    logger = get_logger(threading.current_thread().name)
+    logger.info("start query xml aws")
+    for _, r in df.iterrows():
+        try:
+            response = conn.upload_file(r.dirpath, "inpi-xmls", f"{r.prefix}/{r.file}")
+            print(f"{r.prefix}/{r.file} added in inpi-xmls", flush=True)
+        except boto3.exceptions.S3UploadFailedError as error:
+            print(error.response, flush=True)
+            raise error
+
+    logger.info("end query xml aws")
+
+
+def res_futures(dict_nb: dict, query):
+    """
+    This function applies the query function on each subset of the original df in a parallel way
+    It takes a dictionary with 10-11 pairs key-value. Each key is the df subset name and each value is the df subset
+    It returns a df with the IdRef.
+    """
+    with concurrent.futures.ThreadPoolExecutor(max_workers=11, thread_name_prefix="thread") as executor:
+        # Start the load operations and mark each future with its URL
+        future_to_req = {executor.submit(query, df): df for df in dict_nb.values()}
+        for future in concurrent.futures.as_completed(future_to_req):
+            req = future_to_req[future]
+            try:
+                future.result()
+            except Exception as exc:
+                print('%r generated an exception: %s' % (req, exc), flush=True)
+
+
+def mongo_amd(fil: str):
+    with open(fil, "r") as f:
+        data = f.read()
+    p02.update_db(fil, data)
+
+
+def mongo_new(fil: str):
+    with open(fil, "r") as f:
+        data = f.read()
+    p02.update_db_new(fil, data)
 
 def unzip():
     """
@@ -44,6 +144,7 @@ def unzip():
     # get all the full data paths
     new_complete = []
     paths = []
+    dic_pref_fil = {"dirpath": [], "prefix": [], "file": []}
     folders = os.listdir(PATH)
     for folder in folders:
         if os.path.isdir(folder):
@@ -175,29 +276,14 @@ def unzip():
             os.remove(clef + item + ".zip")
             new = os.listdir(clef + item)
             for fichier in new:
-                # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                #                     endpoint_url=os.getenv("ENDPOINT_URL"))
-
                 dirpath = os.path.join(clef, item, fichier)
                 new_complete.append(dirpath)
 
-                # prefix = f"{clef}{item}".replace(DATA_PATH, "")
+                prefix = f"{clef}{item}".replace(DATA_PATH, "")
 
-                # try:
-                #     # response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-                #     # print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
-                #     # data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get("Body").read().decode()
-                #     with open(dirpath, "r") as f:
-                #         data = f.read()
-                #     p02.update_db(dirpath, data)
-                # except boto3.exceptions.S3UploadFailedError as error:
-                #     print(error.response, flush=True)
-                #     raise error
-                # except:
-                #     print("erreur de chargement")
-
-                # conn.close()
+                dic_pref_fil["dirpath"].append(dirpath)
+                dic_pref_fil["prefix"].append(prefix)
+                dic_pref_fil["file"].append(fichier)
 
     #####################################################################################################
 
@@ -234,25 +320,15 @@ def unzip():
             os.remove(clef + item + ".zip")
             new = os.listdir(clef + item)
             for fichier in new:
-                # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                #                     endpoint_url=os.getenv("ENDPOINT_URL"))
-
                 dirpath = os.path.join(clef, item, fichier)
                 new_complete.append(dirpath)
 
-                # prefix = f"{clef}{item}".replace(DATA_PATH, "")
-                #
-                # try:
-                #     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-                #     print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
-                #     data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get("Body").read().decode()
-                #     p02.update_db(f"{prefix}/{fichier}", data)
-                # except boto3.exceptions.S3UploadFailedError as error:
-                #     print(error.response, flush=True)
-                #     raise error
-                #
-                # conn.close()
+                prefix = f"{clef}{item}".replace(DATA_PATH, "")
+
+                dic_pref_fil["dirpath"].append(dirpath)
+                dic_pref_fil["prefix"].append(prefix)
+                dic_pref_fil["file"].append(fichier)
+
 
     #####################################################################################################
 
@@ -283,26 +359,17 @@ def unzip():
                     folder = item.replace(".zip", "")
                     shutil.move(path + fil, folder)
                     shutil.rmtree(f"{folder}/doc/")
-                    # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                    #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                    #                     endpoint_url=os.getenv("ENDPOINT_URL"))
 
                     dirpath = os.path.join(folder, fil)
                     new_complete.append(dirpath)
 
-                    # prefix = f"{folder}".replace(DATA_PATH, "")
-                    #
-                    # try:
-                    #     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
-                    #     print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
-                    #     data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fil}").get(
-                    #         "Body").read().decode()
-                    #     p02.update_db(f"{prefix}/{fil}", data)
-                    # except boto3.exceptions.S3UploadFailedError as error:
-                    #     print(error.response, flush=True)
-                    #     raise error
-                    #
-                    # conn.close()
+                    prefix = f"{folder}".replace(DATA_PATH, "")
+
+                    dic_pref_fil["dirpath"].append(dirpath)
+                    dic_pref_fil["prefix"].append(prefix)
+                    dic_pref_fil["file"].append(fil)
+
+
             os.remove(item)
 
     #####################################################################################################
@@ -346,26 +413,15 @@ def unzip():
         shutil.move(folder, fannee)
         new = os.listdir(fannee + "/" + folder)
         for fichier in new:
-            # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-            #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-            #                     endpoint_url=os.getenv("ENDPOINT_URL"))
-
             dirpath = os.path.join(fannee, folder, fichier)
             new_complete.append(dirpath)
 
-            # prefix = f"{fannee}/{folder}".replace(DATA_PATH, "")
-            #
-            # try:
-            #     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-            #     print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
-            #     data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get(
-            #         "Body").read().decode()
-            #     p02.update_db(f"{prefix}/{fichier}", data)
-            # except boto3.exceptions.S3UploadFailedError as error:
-            #     print(error.response, flush=True)
-            #     raise error
-            #
-            # conn.close()
+            prefix = f"{fannee}/{folder}".replace(DATA_PATH, "")
+
+            dic_pref_fil["dirpath"].append(dirpath)
+            dic_pref_fil["prefix"].append(prefix)
+            dic_pref_fil["file"].append(fichier)
+
 
     #####################################################################################################
 
@@ -414,26 +470,15 @@ def unzip():
             os.remove(clef + item + ".zip")
             new = os.listdir(clef + item)
             for fichier in new:
-                # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                #                     endpoint_url=os.getenv("ENDPOINT_URL"))
-
                 dirpath = os.path.join(clef, item, fichier)
                 new_complete.append(dirpath)
 
-                # prefix = f"{clef}{item}".replace(DATA_PATH, "")
-                #
-                # try:
-                #     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fichier}")
-                #     print(f"{prefix}/{fichier} added in inpi-xmls", flush=True)
-                #     data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fichier}").get(
-                #         "Body").read().decode()
-                #     p02.update_db(f"{prefix}/{fichier}", data)
-                # except boto3.exceptions.S3UploadFailedError as error:
-                #     print(error.response, flush=True)
-                #     raise error
-                #
-                # conn.close()
+                prefix = f"{clef}{item}".replace(DATA_PATH, "")
+
+                dic_pref_fil["dirpath"].append(dirpath)
+                dic_pref_fil["prefix"].append(prefix)
+                dic_pref_fil["file"].append(fichier)
+
 
     #####################################################################################################
 
@@ -453,29 +498,58 @@ def unzip():
                     if not os.path.isdir(folder):
                         os.makedirs(folder)
                     shutil.move(clef + fil, folder)
-                    # conn = boto3.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                    #                     aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                    #                     endpoint_url=os.getenv("ENDPOINT_URL"))
 
                     dirpath = os.path.join(folder, fil)
                     new_complete.append(dirpath)
 
-                    # prefix = folder.replace(DATA_PATH, "")
-                    #
-                    # try:
-                    #     response = conn.upload_file(dirpath, "inpi-xmls", f"{prefix}/{fil}")
-                    #     print(f"{prefix}/{fil} added in inpi-xmls", flush=True)
-                    #     data = conn.get_object(Bucket="inpi-xmls", Key=f"{prefix}/{fil}").get(
-                    #         "Body").read().decode()
-                    #     p02.update_db(f"{prefix}/{fil}", data)
-                    # except boto3.exceptions.S3UploadFailedError as error:
-                    #     print(error.response, flush=True)
-                    #     raise error
-                    #
-                    # conn.close()
+                    prefix = folder.replace(DATA_PATH, "")
+
+                    dic_pref_fil["dirpath"].append(dirpath)
+                    dic_pref_fil["prefix"].append(prefix)
+                    dic_pref_fil["file"].append(fil)
+
                     if os.path.isdir(f"{folder}/doc/"):
                         shutil.rmtree(f"{folder}/doc/")
                 os.remove(item)
+
+
+
+    #####################################################################################################
+    df_pref_fil = pd.DataFrame(data=dic_pref_fil)
+    df_pref_fil.loc[:,"fullpath"] = df_pref_fil.loc[:,"prefix"] + "/" + df_pref_fil.loc[:,"file"]
+
+    dirfile = {"dirpath": [], "prefix": [], "file": []}
+
+    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
+    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                          endpoint_url=os.getenv("ENDPOINT_URL"))
+
+    paginator = conn.get_paginator('list_objects')
+    for i in range(2010, 2024):
+        operation_parameters = {'Bucket': 'inpi-xmls',
+                                'Prefix': f'{i}'}
+        print("Start paginator AWS S3", flush=True)
+        page_iterator = paginator.paginate(**operation_parameters)
+
+        for page in page_iterator:
+            for item in page["Contents"]:
+                flpath = item["Key"]
+                if flpath in list(df_pref_fil["fullpath"]):
+                    file = item["Key"].split("/")[-1]
+                    dirp = df_pref_fil.loc[df_pref_fil["fullpath"==flpath], "dirpath"].items()
+                    dirfile["dirpath"].append(dirp)
+                    pref = df_pref_fil.loc[df_pref_fil["fullpath"==flpath], "prefix"].items()
+                    dirfile["prefix"].append(pref)
+                    dirfile["file"].append(file)
+        print("End paginator AWS S3", flush=True)
+
+    paths_aws = pd.DataFrame(data=dirfile)
+
+    dic_path = subset_df(paths_aws)
+
+    res_futures(dic_path, req_xml_aws)
 
     #####################################################################################################
 
@@ -487,7 +561,13 @@ def unzip():
     for item in db.list_collection_names():
         db[item].drop()
     new_complete.sort()
-    for file in new_complete:
-        with open(file, "r") as f:
-            data = f.read()
-        p02.update_db(file, data)
+    new = [item for item in new_complete if "NEW" in item]
+    new.sort()
+    df_new = pd.DataFrame(data={"file": new})
+    dict_new = subset_df(df_new)
+    res_futures(dict_new, mongo_new)
+    amd = [item for item in new_complete if "NEW" not in item]
+    amd.sort()
+    for file in amd:
+        mongo_amd(file)
+
