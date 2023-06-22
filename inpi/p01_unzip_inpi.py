@@ -20,15 +20,9 @@ from pymongo import MongoClient
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
-conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                      aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                      endpoint_url=os.getenv("ENDPOINT_URL"))
-print("Connexion AWS S3", flush=True)
 
-client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
-print(client.server_info(), flush=True)
+
+
 
 
 def get_logger(name):
@@ -78,6 +72,12 @@ def subset_df(df: pd.DataFrame) -> dict:
 
 
 def req_xml_aws(df: pd.DataFrame):
+    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
+    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                          endpoint_url=os.getenv("ENDPOINT_URL"))
+    print("Connexion AWS S3", flush=True)
     logger = get_logger(threading.current_thread().name)
     logger.info("start query xml aws")
     for _, r in df.iterrows():
@@ -524,6 +524,13 @@ def unzip():
 
     dirfile = {"dirpath": [], "prefix": [], "file": []}
 
+    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
+    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                          endpoint_url=os.getenv("ENDPOINT_URL"))
+    print("Connexion AWS S3", flush=True)
+
     paginator = conn.get_paginator('list_objects')
     for i in range(2010, 2024):
         operation_parameters = {'Bucket': 'inpi-xmls',
@@ -552,6 +559,9 @@ def unzip():
     #####################################################################################################
 
     # load files into INPI db
+    client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
+    print(client.server_info(), flush=True)
+
     db = client['inpi']
     for item in db.list_collection_names():
         db[item].drop()
