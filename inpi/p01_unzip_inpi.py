@@ -17,9 +17,18 @@ import concurrent.futures
 from inpi import p02_lecture_xml as p02
 from pymongo import MongoClient
 
-
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+
+session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                        aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
+conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                      aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                      endpoint_url=os.getenv("ENDPOINT_URL"))
+print("Connexion AWS S3", flush=True)
+
+client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
+print(client.server_info(), flush=True)
 
 
 def get_logger(name):
@@ -69,12 +78,6 @@ def subset_df(df: pd.DataFrame) -> dict:
 
 
 def req_xml_aws(df: pd.DataFrame):
-    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
-    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                         endpoint_url=os.getenv("ENDPOINT_URL"))
-
     logger = get_logger(threading.current_thread().name)
     logger.info("start query xml aws")
     for _, r in df.iterrows():
@@ -106,15 +109,22 @@ def res_futures(dict_nb: dict, query):
 
 
 def mongo_amd(fil: str):
+    logger = get_logger(threading.current_thread().name)
+    logger.info("start loading mongo amd")
     with open(fil, "r") as f:
         data = f.read()
     p02.update_db(fil, data)
+    logger.info("end loading mongo amd")
 
 
 def mongo_new(fil: str):
+    logger = get_logger(threading.current_thread().name)
+    logger.info("start loading mongo new")
     with open(fil, "r") as f:
         data = f.read()
     p02.update_db_new(fil, data)
+    logger.info("end loading mongo amd")
+
 
 def unzip():
     """
@@ -329,7 +339,6 @@ def unzip():
                 dic_pref_fil["prefix"].append(prefix)
                 dic_pref_fil["file"].append(fichier)
 
-
     #####################################################################################################
 
     # check which year folders are missing in the dictionary with full paths by year
@@ -368,7 +377,6 @@ def unzip():
                     dic_pref_fil["dirpath"].append(dirpath)
                     dic_pref_fil["prefix"].append(prefix)
                     dic_pref_fil["file"].append(fil)
-
 
             os.remove(item)
 
@@ -421,7 +429,6 @@ def unzip():
             dic_pref_fil["dirpath"].append(dirpath)
             dic_pref_fil["prefix"].append(prefix)
             dic_pref_fil["file"].append(fichier)
-
 
     #####################################################################################################
 
@@ -479,7 +486,6 @@ def unzip():
                 dic_pref_fil["prefix"].append(prefix)
                 dic_pref_fil["file"].append(fichier)
 
-
     #####################################################################################################
 
     # unzip files in dc_missing
@@ -512,19 +518,11 @@ def unzip():
                         shutil.rmtree(f"{folder}/doc/")
                 os.remove(item)
 
-
-
     #####################################################################################################
     df_pref_fil = pd.DataFrame(data=dic_pref_fil)
-    df_pref_fil.loc[:,"fullpath"] = df_pref_fil.loc[:,"prefix"] + "/" + df_pref_fil.loc[:,"file"]
+    df_pref_fil.loc[:, "fullpath"] = df_pref_fil.loc[:, "prefix"] + "/" + df_pref_fil.loc[:, "file"]
 
     dirfile = {"dirpath": [], "prefix": [], "file": []}
-
-    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
-    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                          endpoint_url=os.getenv("ENDPOINT_URL"))
 
     paginator = conn.get_paginator('list_objects')
     for i in range(2010, 2024):
@@ -538,9 +536,9 @@ def unzip():
                 flpath = item["Key"]
                 if flpath in list(df_pref_fil["fullpath"]):
                     file = item["Key"].split("/")[-1]
-                    dirp = df_pref_fil.loc[df_pref_fil["fullpath"==flpath], "dirpath"].items()
+                    dirp = df_pref_fil.loc[df_pref_fil["fullpath" == flpath], "dirpath"].items()
                     dirfile["dirpath"].append(dirp)
-                    pref = df_pref_fil.loc[df_pref_fil["fullpath"==flpath], "prefix"].items()
+                    pref = df_pref_fil.loc[df_pref_fil["fullpath" == flpath], "prefix"].items()
                     dirfile["prefix"].append(pref)
                     dirfile["file"].append(file)
         print("End paginator AWS S3", flush=True)
@@ -554,9 +552,6 @@ def unzip():
     #####################################################################################################
 
     # load files into INPI db
-    client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
-    print(client.server_info(), flush=True)
-
     db = client['inpi']
     for item in db.list_collection_names():
         db[item].drop()
@@ -570,4 +565,3 @@ def unzip():
     amd.sort()
     for file in amd:
         mongo_amd(file)
-
