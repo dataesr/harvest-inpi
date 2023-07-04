@@ -97,33 +97,29 @@ def res_futures(dict_nb: dict, query):
     It takes a dictionary with 10-11 pairs key-value. Each key is the df subset name and each value is the df subset
     It returns a df with the IdRef.
     """
+    global jointure
+    res = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=11, thread_name_prefix="thread") as executor:
         # Start the load operations and mark each future with its URL
         future_to_req = {executor.submit(query, df): df for df in dict_nb.values()}
         for future in concurrent.futures.as_completed(future_to_req):
             req = future_to_req[future]
             try:
-                future.result()
+                data = future.result()
+                res.append(data)
+                jointure = pd.concat(res)
             except Exception as exc:
                 print('%r generated an exception: %s' % (req, exc), flush=True)
 
 
-def mongo_amd(fil: str):
+def mongo_fill(df: pd.DataFrame):
     logger = get_logger(threading.current_thread().name)
-    logger.info("start loading mongo amd")
-    with open(fil, "r") as f:
-        data = f.read()
-    p02.update_db(fil, data)
-    logger.info("end loading mongo amd")
-
-
-def mongo_new(fil: str):
-    logger = get_logger(threading.current_thread().name)
-    logger.info("start loading mongo new")
-    with open(fil, "r") as f:
-        data = f.read()
-    p02.update_db_new(fil, data)
-    logger.info("end loading mongo amd")
+    logger.info("start loading mongo")
+    for fil in set(df["file"]):
+        with open(fil, "r") as f:
+            data = f.read()
+        p02.update_db_new(fil, data)
+    logger.info("end loading mongo")
 
 
 def unzip():
@@ -569,9 +565,32 @@ def unzip():
     new = [item for item in new_complete if "NEW" in item]
     new.sort()
     df_new = pd.DataFrame(data={"file": new})
+    print("Début du chargement de new.", flush=True)
     dict_new = subset_df(df_new)
-    res_futures(dict_new, mongo_new)
+    res_futures(dict_new, mongo_fill)
+    print("Début du chargement de new.", flush=True)
+
     amd = [item for item in new_complete if "NEW" not in item]
     amd.sort()
-    for file in amd:
-        mongo_amd(file)
+
+    dirfile = {"fullpath": [], "annee_semaine": []}
+    for item in amd:
+        ppath = item.replace(DATA_PATH, "").split("/")
+        dirfile["fullpath"].append(item)
+        del ppath[2]
+        anse = "_".join(ppath)
+        dirfile["annee_semaine"].append(anse)
+
+    df_files = pd.DataFrame(data=dirfile)
+    df_files = df_files.sort_values("annee_semaine")
+    list_anse = list(set(df_files["annee_semaine"]))
+    list_anse.sort()
+    for annee_semaine in list_anse:
+        liste_annee_semaine = list_anse.split("_")
+        print(f"Début de la semaine {liste_annee_semaine[1]} de l'année {liste_annee_semaine[0]}.", flush=True)
+        tmp = df_files.loc[df_files["annee_semaine"]==annee_semaine]
+        if len(tmp["fullpath"]) > 0:
+            tmp = tmp.rename(columns={"fullpath": "file"})
+            dict_amd = subset_df(tmp)
+            res_futures(dict_amd, mongo_fill)
+        print(f"Fin de la semaine {liste_annee_semaine[1]} de l'année {liste_annee_semaine[0]}.", flush=True)
