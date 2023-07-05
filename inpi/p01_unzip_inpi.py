@@ -71,24 +71,24 @@ def subset_df(df: pd.DataFrame) -> dict:
     return dict_nb
 
 
-def req_xml_aws(df: pd.DataFrame):
-    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
-    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                          endpoint_url=os.getenv("ENDPOINT_URL"))
-    print("Connexion AWS S3", flush=True)
-    logger = get_logger(threading.current_thread().name)
-    logger.info("start query xml aws")
-    for _, r in df.iterrows():
-        try:
-            response = conn.upload_file(r.dirpath, "inpi-xmls", f"{r.prefix}/{r.file}")
-            print(f"{r.prefix}/{r.file} added in inpi-xmls", flush=True)
-        except boto3.exceptions.S3UploadFailedError as error:
-            print(error.response, flush=True)
-            raise error
-
-    logger.info("end query xml aws")
+# def req_xml_aws(df: pd.DataFrame):
+#     session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+#                             aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
+#     conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+#                           aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+#                           endpoint_url=os.getenv("ENDPOINT_URL"))
+#     print("Connexion AWS S3", flush=True)
+#     logger = get_logger(threading.current_thread().name)
+#     logger.info("start query xml aws")
+#     for _, r in df.iterrows():
+#         try:
+#             response = conn.upload_file(r.dirpath, "inpi-xmls", f"{r.prefix}/{r.file}")
+#             print(f"{r.prefix}/{r.file} added in inpi-xmls", flush=True)
+#         except boto3.exceptions.S3UploadFailedError as error:
+#             print(error.response, flush=True)
+#             raise error
+#
+#     logger.info("end query xml aws")
 
 
 def res_futures(dict_nb: dict, query):
@@ -520,37 +520,37 @@ def unzip():
 
     dirfile = {"dirpath": [], "prefix": [], "file": []}
 
-    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
-    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                          endpoint_url=os.getenv("ENDPOINT_URL"))
-    print("Connexion AWS S3", flush=True)
-
-    paginator = conn.get_paginator('list_objects')
-    for i in range(2010, 2024):
-        operation_parameters = {'Bucket': 'inpi-xmls',
-                                'Prefix': f'{i}'}
-        print("Start paginator AWS S3", flush=True)
-        page_iterator = paginator.paginate(**operation_parameters)
-
-        for page in page_iterator:
-            for item in page["Contents"]:
-                flpath = item["Key"]
-                if flpath in list(df_pref_fil["fullpath"]):
-                    file = item["Key"].split("/")[-1]
-                    dirp = df_pref_fil.loc[df_pref_fil["fullpath" == flpath], "dirpath"].items()
-                    dirfile["dirpath"].append(dirp)
-                    pref = df_pref_fil.loc[df_pref_fil["fullpath" == flpath], "prefix"].items()
-                    dirfile["prefix"].append(pref)
-                    dirfile["file"].append(file)
-        print("End paginator AWS S3", flush=True)
-
-    paths_aws = pd.DataFrame(data=dirfile)
-
-    dic_path = subset_df(paths_aws)
-
-    res_futures(dic_path, req_xml_aws)
+    # session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    #                         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
+    # conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    #                       aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    #                       endpoint_url=os.getenv("ENDPOINT_URL"))
+    # print("Connexion AWS S3", flush=True)
+    #
+    # paginator = conn.get_paginator('list_objects')
+    # for i in range(2010, 2024):
+    #     operation_parameters = {'Bucket': 'inpi-xmls',
+    #                             'Prefix': f'{i}'}
+    #     print("Start paginator AWS S3", flush=True)
+    #     page_iterator = paginator.paginate(**operation_parameters)
+    #
+    #     for page in page_iterator:
+    #         for item in page["Contents"]:
+    #             flpath = item["Key"]
+    #             if flpath in list(df_pref_fil["fullpath"]):
+    #                 file = item["Key"].split("/")[-1]
+    #                 dirp = df_pref_fil.loc[df_pref_fil["fullpath" == flpath], "dirpath"].items()
+    #                 dirfile["dirpath"].append(dirp)
+    #                 pref = df_pref_fil.loc[df_pref_fil["fullpath" == flpath], "prefix"].items()
+    #                 dirfile["prefix"].append(pref)
+    #                 dirfile["file"].append(file)
+    #     print("End paginator AWS S3", flush=True)
+    #
+    # paths_aws = pd.DataFrame(data=dirfile)
+    #
+    # dic_path = subset_df(paths_aws)
+    #
+    # res_futures(dic_path, req_xml_aws)
 
     #####################################################################################################
 
@@ -586,7 +586,7 @@ def unzip():
     list_anse = list(set(df_files["annee_semaine"]))
     list_anse.sort()
     for annee_semaine in list_anse:
-        liste_annee_semaine = list_anse.split("_")
+        liste_annee_semaine = annee_semaine.split("_")
         print(f"Début de la semaine {liste_annee_semaine[1]} de l'année {liste_annee_semaine[0]}.", flush=True)
         tmp = df_files.loc[df_files["annee_semaine"]==annee_semaine]
         if len(tmp["fullpath"]) > 0:
