@@ -1747,78 +1747,448 @@ def update_db_new(file_name: str, data_xml: str):
         ipcs = pd.DataFrame(data=[])
         cpcs = pd.DataFrame(data=[])
 
+
     if len(dic_pn) > 0:
-        pub_id = publication.insert_one(dic_pn.to_dict("records")[0]).inserted_id
+        liste_pn.append(dic_pn)
+        qr = {"publication-number": dic_pn["publication-number"].item()}
+        mydoc = list(publication.find(qr))
+        if len(mydoc) == 0:
+            pub_id = publication.insert_one(dic_pn.to_dict("records")[0]).inserted_id
+        else:
+            for res in mydoc:
+                for clef in ["title", "abstract"]:
+                    if clef in res.keys():
+                        if dic_pn[clef].item() != "":
+                            if res[clef] == "":
+                                del res[clef]
+                if res:
+                    diff = DeepDiff(res, dic_pn.to_dict("records")[0])
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: dic_pn[k].item()}}
+                                x = publication.update_many(qr, nwval, upsert=True)
 
     if len(appl) > 0:
         liste_app.append(appl)
         for _, app in appl.iterrows():
-            app_id = person.insert_one(app.to_dict()).inserted_id
+            qr = {"publication-number": app["publication-number"],
+                  "application-number-fr": app["application-number-fr"],
+                  "sequence": app["sequence"],
+                  "type-party": app["type-party"],
+                  "first-name": app["first-name"],
+                  "middle-name": app["middle-name"],
+                  "last-name": app["last-name"],
+                  "orgname": app["orgname"]}
+            mydoc = list(person.find(qr))
+            if len(mydoc) == 0:
+                app_id = person.insert_one(app.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, app.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: app[k]}}
+                                x = person.update_many(qr, nwval, upsert=True)
 
     if len(pref) > 0:
         liste_pbref.append(pref)
         for _, pr in pref.iterrows():
-            pr_id = publicationRef.insert_one(pr.to_dict()).inserted_id
+            qr = {"publication-number": pr["publication-number"],
+                  "application-number-fr": pr["application-number-fr"],
+                  "data-format-publication": pr["data-format-publication"],
+                  "kind": pr["kind"],
+                  "nature": pr["nature"],
+                  "date-publication": pr["date-publication"],
+                  "fr-bopinum": pr["fr-bopinum"]}
+            mydoc = list(publicationRef.find(qr))
+            if len(mydoc) == 0:
+                pr_id = publicationRef.insert_one(pr.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, pr.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: pr[k]}}
+                                x = publicationRef.update_many(qr, nwval, upsert=True)
 
     if len(aref) > 0:
         liste_apref.append(aref)
         for _, ar in aref.iterrows():
-            ar_id = application.insert_one(ar.to_dict()).inserted_id
+            qr = {"data-format-application": ar["data-format-application"],
+                  "doc-number": ar["doc-number"],
+                  "appl-type": ar["appl-type"],
+                  "country": ar["country"],
+                  "date-application": ar["date-application"],
+                  "application-number-fr": ar["application-number-fr"],
+                  "publication-number": ar["publication-number"]}
+            mydoc = list(application.find(qr))
+            if len(mydoc) == 0:
+                ar_id = application.insert_one(ar.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, ar.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: ar[k]}}
+                                x = application.update_many(qr, nwval, upsert=True)
 
     if len(rnw) > 0:
         liste_renewal.append(rnw)
         for _, rn in rnw.iterrows():
-            rnw_id = renewal.insert_one(rn.to_dict()).inserted_id
+            qr = {"publication-number": rn["publication-number"],
+                  "type-payment": rn["type-payment"],
+                  "percentile": rn["percentile"],
+                  "date-payment": rn["date-payment"],
+                  "amount": rn["amount"]}
+            mydoc = list(renewal.find(qr))
+            if len(mydoc) == 0:
+                rnw_id = renewal.insert_one(rn.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, rn.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: rn[k]}}
+                                x = renewal.update_many(qr, nwval, upsert=True)
 
     if len(erra) > 0:
         liste_errata.append(erra)
         for _, ert in erra.iterrows():
-            err_id = errata.insert_one(ert.to_dict()).inserted_id
+            qr = {"publication-number": ert["publication-number"],
+                  "part": ert["part"],
+                  "text": ert["text"],
+                  "date-errata": ert["date-errata"],
+                  "fr-bopinum": ert["fr-bopinum"]}
+            mydoc = list(errata.find(qr))
+            if len(mydoc) == 0:
+                err_id = errata.insert_one(ert.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, ert.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: ert[k]}}
+                                x = errata.update_many(qr, nwval, upsert=True)
 
     if len(ins) > 0:
         liste_ins.append(ins)
         for _, insc in ins.iterrows():
-            ins_id = inscription.insert_one(insc.to_dict()).inserted_id
+            qr = {"publication-number": insc["publication-number"],
+                  "registered-number": insc["registered-number"],
+                  "date-inscription": insc["date-inscription"],
+                  "code-inscription": insc["code-inscription"],
+                  "nature-inscription": insc["nature-inscription"],
+                  "fr-bopinum": insc["fr-bopinum"],
+                  "application-number": insc["application-number"]}
+            mydoc = list(inscription.find(qr))
+            if len(mydoc) == 0:
+                ins_id = inscription.insert_one(insc.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, insc.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: insc[k]}}
+                                x = inscription.update_many(qr, nwval, upsert=True)
 
     if len(sear) > 0:
         liste_search.append(sear)
         for _, ser in sear.iterrows():
-            ser_id = search.insert_one(ser.to_dict()).inserted_id
+            qr = {"publication-number": ser["publication-number"],
+                  "type-search": ser["type-search"]}
+            mydoc = list(search.find(qr))
+            if len(mydoc) == 0:
+                ser_id = search.insert_one(ser.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, ser.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: ser[k]}}
+                                x = search.update_many(qr, nwval, upsert=True)
 
     if len(amend) > 0:
         liste_amended.append(amend)
         for _, ame in amend.iterrows():
-            ame_id = amendedClaim.insert_one(ame.to_dict()).inserted_id
+            qr = {"publication-number": ame["publication-number"],
+                  "claim": ame["claim"]}
+            mydoc = list(amendedClaim.find(qr))
+            if len(mydoc) == 0:
+                ame_id = amendedClaim.insert_one(ame.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, ame.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: ame[k]}}
+                                x = amendedClaim.update_many(qr, nwval, upsert=True)
 
     if len(cit) > 0:
         liste_citation.append(cit)
         for _, ct in cit.iterrows():
-            cit_id = citation.insert_one(ct.to_dict()).inserted_id
+            qr = {"publication-number": ct["publication-number"],
+                  "application-number-fr": ct["application-number-fr"],
+                  "type-citation": ct["type-citation"],
+                  "citation": ct["citation"],
+                  "country": ct["country"],
+                  "doc-number": ct["doc-number"],
+                  "date-doc": ct["date-doc"],
+                  "passage": ct["passage"],
+                  "category": ct["category"],
+                  "claim": ct["claim"]
+                  }
+            mydoc = list(citation.find(qr))
+            if len(mydoc) == 0:
+                cit_id = citation.insert_one(ct.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, ct.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: ct[k]}}
+                                x = citation.update_many(qr, nwval, upsert=True)
 
     if len(prio) > 0:
         liste_priority.append(prio)
         for _, pri in prio.iterrows():
-            prio_id = priority.insert_one(pri.to_dict()).inserted_id
+            qr = {"publication-number": pri["publication-number"],
+                  "application-number-fr": pri["application-number-fr"],
+                  "sequence": pri["sequence"],
+                  "country": pri["country"],
+                  "kind": pri["kind"],
+                  "priority-number": pri["priority-number"],
+                  "date-priority": pri["date-priority"]
+                  }
+            mydoc = list(priority.find(qr))
+            if len(mydoc) == 0:
+                prio_id = priority.insert_one(pri.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, pri.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: pri[k]}}
+                                x = priority.update_many(qr, nwval, upsert=True)
 
     if len(redoc) > 0:
         liste_redoc.append(redoc)
         for _, rdc in redoc.iterrows():
-            rdc_id = relatedDocument.insert_one(rdc.to_dict()).inserted_id
+            qr = {"type-related-doc": rdc["type-related-doc"],
+                  "country": rdc["country"],
+                  "doc-number": rdc["doc-number"],
+                  "date-document": rdc["date-document"],
+                  "application-number-fr": rdc["application-number-fr"],
+                  "publication-number": rdc["publication-number"]}
+            mydoc = list(relatedDocument.find(qr))
+            if len(mydoc) == 0:
+                rdc_id = relatedDocument.insert_one(rdc.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, rdc.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: rdc[k]}}
+                                x = relatedDocument.update_many(qr, nwval, upsert=True)
 
     if len(oldipc) > 0:
         liste_oldipc.append(oldipc)
         for _, oipc in oldipc.iterrows():
-            oipc_id = oldIpc.insert_one(oipc.to_dict()).inserted_id
+            qr = {"edition": oipc["edition"],
+                  "main-classification": oipc["main-classification"],
+                  "further-classification-sequence": oipc["further-classification-sequence"],
+                  "further-classification": oipc["further-classification"],
+                  "application-number-fr": oipc["application-number-fr"],
+                  "publication-number": oipc["publication-number"]}
+            mydoc = list(oldIpc.find(qr))
+            if len(mydoc) == 0:
+                oipc_id = oldIpc.insert_one(oipc.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, oipc.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: oipc[k]}}
+                                x = oldIpc.update_many(qr, nwval, upsert=True)
 
     if len(ipcs) > 0:
         liste_ipc.append(ipcs)
         for _, ip in ipcs.iterrows():
-            ipc_id = ipc.insert_one(ip.to_dict()).inserted_id
+            qr = {"classification": ip["classification"],
+                  "sequence": ip["sequence"],
+                  "application-number-fr": ip["application-number-fr"],
+                  "publication-number": ip["publication-number"]}
+            mydoc = list(ipc.find(qr))
+            if len(mydoc) == 0:
+                ipc_id = ipc.insert_one(ip.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, ip.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                nwval = {"$set": {k: ip[k]}}
+                                x = ipc.update_many(qr, nwval, upsert=True)
 
     if len(cpcs) > 0:
         liste_cpc.append(cpcs)
         for _, cp in cpcs.iterrows():
-            cpc_id = cpc.insert_one(cp.to_dict()).inserted_id
+            qr = {"sequence": cp["sequence"],
+                  "scheme": cp["scheme"],
+                  "office": cp["office"],
+                  "date-cpc": cp["date-cpc"],
+                  "symbol": cp["symbol"],
+                  "position": cp["position"],
+                  "value": cp["value"],
+                  "status": cp["status"],
+                  "source": cp["application-number-fr"],
+                  "date-classification": cp["application-number-fr"],
+                  "application-number-fr": cp["application-number-fr"],
+                  "publication-number": cp["publication-number"]}
+            mydoc = list(cpc.find(qr))
+            if len(mydoc) == 0:
+                cpc_id = cpc.insert_one(cp.to_dict()).inserted_id
+            else:
+                for res in mydoc:
+                    diff = DeepDiff(res, cp.to_dict())
+                    if len(diff) > 0:
+                        if "values_changed" in diff.keys():
+                            d = diff["values_changed"]
+                            ks = list(d.keys())
+                            tks = []
+                            for k in ks:
+                                k = k.replace("root['", "")
+                                k = k.replace("']", "")
+                                tks.append(k)
+
+                            for k in tks:
+                                did2 = db.cpc.drop_indexes()
+                                nwval = {"$set": {k: cp[k]}}
+                                x = cpc.update_many(qr, nwval, upsert=True)
 
     client.close()
 

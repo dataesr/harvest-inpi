@@ -7,7 +7,6 @@ import re
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
-# DATA_PATH = "/run/media/julia/DATA/INPI/"
 
 
 def _is_ftp_dir(ftp_handle, name, guess_by_extension=True):
@@ -191,9 +190,8 @@ def loading():
         if not rest_present:
             if rest_years2:
                 for nom in rest_years2:
-                    print(os.listdir(f"{path}"))
-                    if nom not in os.listdir(f"{path}"):
-                        print(nom)
+                    an = max(list(set(list_files(r"\d{4}", [nom]))))
+                    if nom not in os.listdir(f"{path}{an}"):
                         loading_file(ftp_server, nom + ".zip")
         else:
             if rest_years2:
@@ -206,7 +204,6 @@ def loading():
                 for nom in rest_years2:
                     if os.path.exists(f"{path}{annee}"):
                         if nom not in os.listdir(f"{path}{annee}"):
-                            print(nom)
                             loading_file(ftp_server, nom + ".zip")
                     else:
                         loading_file(ftp_server, nom + ".zip")
