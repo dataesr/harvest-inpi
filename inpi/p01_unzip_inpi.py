@@ -9,6 +9,7 @@ import shutil
 import tarfile
 import boto3
 import pandas as pd
+import numpy as np
 import logging
 import threading
 import sys
@@ -60,20 +61,14 @@ def subset_df(df: pd.DataFrame) -> dict:
     """
     prct10 = int(round(len(df) * 10 / 100, 0))
     dict_nb = {}
-    deb = 0
-    fin = prct10
-    dict_nb["df1"] = df.iloc[deb:fin, :]
-    deb = fin
-    dixieme = 10 * prct10
-    reste = (len(df) - dixieme)
-    fin_reste = len(df) + 1
-    for i in range(2, 11):
-        fin = (i * prct10 + 1)
-        dict_nb["df" + str(i)] = df.iloc[deb:fin, :]
-        if reste > 0:
-            if len(df.iloc[fin: fin_reste, :]) > 0:
-                dict_nb["reste"] = df.iloc[fin: fin_reste, :]
-        deb = fin
+    indices = list(df.index)
+    listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
+    i = 1
+    for liste in listes_indices:
+        min_ind = np.min(liste)
+        max_ind = np.max(liste) + 1
+        dict_nb["df" + str(i)] = df.iloc[min_ind: max_ind, :]
+        i = i + 1
 
     return dict_nb
 
@@ -119,13 +114,15 @@ def res_futures(dict_nb: dict, query):
 
 
 def mongo_fill(df: pd.DataFrame):
-    logger = get_logger(threading.current_thread().name)
-    logger.info("start loading mongo")
-    for fil in set(df["file"]):
+    # logger = get_logger(threading.current_thread().name)
+    # logger.info("start loading mongo")
+    for _, r in df.iterrows():
+        fil = r.dirpath
+        # print(f"Le fichier chargé est {fil}", flush=True)
         with open(fil, "r") as f:
             data = f.read()
-        p02.update_db_new(fil, data)
-    logger.info("end loading mongo")
+        p02.update_db(fil, data)
+    # logger.info("end loading mongo")
 
 
 def unzip():
@@ -147,14 +144,13 @@ def unzip():
     dir2 = os.listdir(PATH)
 
     # unzip data pre-2017 if not already done
-    if 'Biblio_FR_Stock.tar' in list_dir:
-        my_tar = tarfile.open('Biblio_FR_Stock.tar')
+    if 'Biblio_FR_2010-2016.tar' in list_dir:
+        my_tar = tarfile.open('Biblio_FR_2010-2016.tar')
         my_tar.extractall('.')
         my_tar.close()
-        os.remove('Biblio_FR_Stock.tar')
+        os.remove('Biblio_FR_2010-2016.tar')
 
     # get all the full data paths
-    new_complete = []
     paths = []
     dic_pref_fil = {"dirpath": [], "prefix": [], "file": []}
     folders = os.listdir(PATH)
@@ -289,7 +285,6 @@ def unzip():
             new = os.listdir(clef + item)
             for fichier in new:
                 dirpath = os.path.join(clef, item, fichier)
-                new_complete.append(dirpath)
 
                 prefix = f"{clef}{item}".replace(DATA_PATH, "")
                 prefix = prefix.replace("INPI/", "")
@@ -341,7 +336,6 @@ def unzip():
             new = os.listdir(clef + item)
             for fichier in new:
                 dirpath = os.path.join(clef, item, fichier)
-                new_complete.append(dirpath)
 
                 prefix = f"{clef}{item}".replace(DATA_PATH, "")
                 prefix = prefix.replace("INPI/", "")
@@ -388,7 +382,6 @@ def unzip():
                     shutil.rmtree(f"{folder}/doc/")
 
                     dirpath = os.path.join(folder, fil)
-                    new_complete.append(dirpath)
 
                     prefix = f"{folder}".replace(DATA_PATH, "")
                     prefix = prefix.replace("INPI/", "")
@@ -448,7 +441,6 @@ def unzip():
         new = os.listdir(fannee + "/" + folder)
         for fichier in new:
             dirpath = os.path.join(fannee, folder, fichier)
-            new_complete.append(dirpath)
 
             prefix = f"{fannee}/{folder}".replace(DATA_PATH, "")
             prefix = prefix.replace("INPI/", "")
@@ -512,7 +504,6 @@ def unzip():
             new = os.listdir(clef + item)
             for fichier in new:
                 dirpath = os.path.join(clef, item, fichier)
-                new_complete.append(dirpath)
 
                 prefix = f"{clef}{item}".replace(DATA_PATH, "")
                 prefix = prefix.replace("INPI/", "")
@@ -548,7 +539,6 @@ def unzip():
                     shutil.move(clef + fil, folder)
 
                     dirpath = os.path.join(folder, fil)
-                    new_complete.append(dirpath)
 
                     prefix = folder.replace(PATH, "")
                     prefix = prefix.replace("INPI/", "")
@@ -571,7 +561,9 @@ def unzip():
     #####################################################################################################
     df_pref_fil = pd.DataFrame(data=dic_pref_fil)
     df_pref_fil.loc[:, "fullpath"] = df_pref_fil.loc[:, "prefix"] + "/" + df_pref_fil.loc[:, "file"]
-    # df_pref_fil.to_csv(f"{DATA_PATH}df_pref_file.csv", sep="|", encoding="utf-8", index=False)
+    df_pref_fil.to_csv(f"{DATA_PATH}df_pref_file.csv", sep="|", encoding="utf-8", index=False)
+    df_pref_fil = pd.read_csv(f"{DATA_PATH}df_pref_file.csv", sep="|", encoding="utf-8", engine="python")
+    df_pref_fil = df_pref_fil.sort_values("dirpath")
 
     dic_path = subset_df(df_pref_fil)
 
@@ -584,53 +576,32 @@ def unzip():
     print(client.server_info(), flush=True)
 
     db = client['inpi']
-    new_complete.sort()
-    new = [item for item in new_complete if "NEW" in item]
-    new.sort()
-    df_new = pd.DataFrame(data={"file": new})
-    # df_new.to_csv(f"{DATA_PATH}df_new.csv", sep="|", encoding="utf-8", index=False)
-    print("Début du chargement de new.", flush=True)
-    logger_mongo.info("Start loading mongo new")
-    dict_new = subset_df(df_new)
-    res_futures(dict_new, mongo_fill)
-    print("Fin du chargement de new.", flush=True)
-    logger_mongo.info("End loading mongo new")
 
-    logger_mongo.info("Start mongo amended")
+    for item in db.list_collection_names():
+        db[item].drop()
 
-    amd = [item for item in new_complete if "NEW" not in item]
-    amd.sort()
-    df_amd = pd.DataFrame(data={"file": amd})
-    # df_amd.to_csv(f"{DATA_PATH}df_amd.csv", sep="|", encoding="utf-8", index=False)
-
-    dirfile = {"fullpath": [], "annee_semaine": []}
-    for dir in amd:
-        dirfile["fullpath"].append(dir)
-        ppath = dir.replace(PATH, "").split("/")
-        print(ppath)
-        an_amd =  ppath[0]
-        del ppath[0]
-        del ppath[1]
-        ppath2 = ppath[0].split("_")
-        ppath2 = [item for item in ppath2 if "FR" not in item]
-        sem_amd = ppath2[-1]
-        ppath3 = [an_amd, sem_amd]
-        anse = "_".join(ppath3)
-        dirfile["annee_semaine"].append(anse)
-
-    df_files = pd.DataFrame(data=dirfile)
-    df_files = df_files.sort_values("annee_semaine")
-    # df_files.to_csv(f"{DATA_PATH}df_files.csv", sep="|", encoding="utf-8", index=False)
-    list_anse = list(set(df_files["annee_semaine"]))
-    list_anse.sort()
-    # print(list_anse)
-    for annee_semaine in list_anse:
-        liste_annee_semaine = annee_semaine.split("_")
-        print(f"Début de la semaine {liste_annee_semaine[1]} de l'année {liste_annee_semaine[0]}.", flush=True)
-        tmp = df_files.loc[df_files["annee_semaine"]==annee_semaine]
-        if len(tmp["fullpath"]) > 0:
-            tmp = tmp.rename(columns={"fullpath": "file"})
-            dict_amd = subset_df(tmp)
-            res_futures(dict_amd, mongo_fill)
-        print(f"Fin de la semaine {liste_annee_semaine[1]} de l'année {liste_annee_semaine[0]}.", flush=True)
-    logger_mongo.info("End loading mongo amended")
+    print("Début du chargement de mongo.", flush=True)
+    logger_mongo.info("Start loading mongo")
+    ordre = list(set(df_pref_fil["prefix"]))
+    ordre.sort()
+    for semaine in ordre:
+        print(f"Chargement de la semaine {semaine}.")
+        df_semaine = df_pref_fil.loc[df_pref_fil["prefix"]==semaine].sort_values("dirpath").reset_index()
+        longueur = len(df_semaine)
+        if longueur >= 10:
+            prct10 = int(round(longueur * 10 / 100, 0))
+        else:
+            prct10 = 1
+        dic_path2 = {}
+        indices = list(df_semaine.index)
+        print(f"La longueur de l\'index de la semaine {semaine} est de {len(indices)}", flush=True)
+        listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
+        i = 1
+        for liste in listes_indices:
+            min_ind = np.min(liste)
+            max_ind = np.max(liste) + 1
+            dic_path2["df" + str(i)] = df_semaine.iloc[min_ind: max_ind, :]
+            i = i + 1
+        res_futures(dic_path2, mongo_fill)
+    print("Fin du chargement de mongo.", flush=True)
+    logger_mongo.info("End loading mongo")
