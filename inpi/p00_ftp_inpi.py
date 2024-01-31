@@ -4,19 +4,22 @@
 import ftplib
 import os
 import re
+from application.server.main.logger import get_logger
+
+logger = get_logger(__name__)
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+DATA_PATH = os.getenv("MOUNTED_VOLUME_TEST")
 
 
 def _is_ftp_dir(ftp_handle, name, guess_by_extension=True):
-    """ simply determines if an item listed on the ftp server is a valid directory or not """
+    """simply determines if an item listed on the ftp server is a valid directory or not"""
 
     # if the name has a "." in the fourth to last position, it's probably a file extension
     # this is MUCH faster than trying to set every file to a working directory, and will work 99% of time.
     if guess_by_extension is True:
         if len(name) >= 4:
-            if name[-4] == '.':
+            if name[-4] == ".":
                 return False
 
     original_cwd = ftp_handle.pwd()  # remember the current working directory
@@ -35,7 +38,7 @@ def _is_ftp_dir(ftp_handle, name, guess_by_extension=True):
 
 
 def _make_parent_dir(fpath):
-    """ ensures the parent directory of a filepath exists """
+    """ensures the parent directory of a filepath exists"""
     dirname = os.path.dirname(fpath)
     while not os.path.exists(dirname):
         try:
@@ -47,11 +50,11 @@ def _make_parent_dir(fpath):
 
 
 def _download_ftp_file(ftp_handle, name, dest, overwrite):
-    """ downloads a single file from an ftp server """
+    """downloads a single file from an ftp server"""
     _make_parent_dir(dest.lstrip("/"))
     if not os.path.exists(dest) or overwrite is True:
         try:
-            with open(dest, 'wb') as f:
+            with open(dest, "wb") as f:
                 ftp_handle.retrbinary("RETR {0}".format(name), f.write)
             print("downloaded: {0}".format(dest))
         except FileNotFoundError:
@@ -61,7 +64,7 @@ def _download_ftp_file(ftp_handle, name, dest, overwrite):
 
 
 def _file_name_match_patern(pattern, name):
-    """ returns True if filename matches the pattern"""
+    """returns True if filename matches the pattern"""
     if pattern is None:
         return True
     else:
@@ -69,7 +72,7 @@ def _file_name_match_patern(pattern, name):
 
 
 def _mirror_ftp_dir(ftp_handle, name, overwrite, guess_by_extension, pattern):
-    """ replicates a directory on an ftp server recursively """
+    """replicates a directory on an ftp server recursively"""
     for item in ftp_handle.nlst(name):
         if _is_ftp_dir(ftp_handle, item, guess_by_extension):
             _mirror_ftp_dir(ftp_handle, item, overwrite, guess_by_extension, pattern)
@@ -97,12 +100,7 @@ def download_ftp_tree(ftp_handle, path, destination, pattern=None, overwrite=Fal
     original_directory = os.getcwd()  # remember working directory before function is executed
     os.chdir(destination)  # change working directory to ftp mirror directory
 
-    _mirror_ftp_dir(
-        ftp_handle,
-        path,
-        pattern=pattern,
-        overwrite=overwrite,
-        guess_by_extension=guess_by_extension)
+    _mirror_ftp_dir(ftp_handle, path, pattern=pattern, overwrite=overwrite, guess_by_extension=guess_by_extension)
 
     os.chdir(original_directory)  # reset working directory to what it was before function exec
 
@@ -122,29 +120,31 @@ def remove_zip(liste: list) -> list:
 
 
 def loading_file(ftp_handle, file):
-    with open(f"{DATA_PATH}/INPI/{file}", 'wb') as f:
+    with open(f"{DATA_PATH}/INPI/{file}", "wb") as f:
         ftp_handle.retrbinary(f"RETR {file}", f.write)
 
 
 def loading():
     # os.chdir(DATA_PATH)
-    os.system(f'mkdir -p {DATA_PATH}/INPI')
+    os.system(f"mkdir -p {DATA_PATH}/INPI")
     path = os.path.join(DATA_PATH, "INPI/")
     os.chdir(path)
     # check which directories are already present
     present = os.listdir()
+    logger.debug("Current folders", present)
 
     # connect to the FTP server
-    ftp_server = ftplib.FTP('www.inpi.net', os.getenv('USERNAME_INPI'), os.getenv('PWD_INPI'))
+    ftp_server = ftplib.FTP("www.inpi.net", os.getenv("USERNAME_INPI"), os.getenv("PWD_INPI"))
 
     # list all the elements available
     liste = []
-    ftp_server.retrlines('LIST', liste.append)
+    ftp_server.retrlines("LIST", liste.append)
 
     files = ftp_server.nlst()
 
     # keep only the yearly forlders
     year_list = list_files(r"^\d{4}$", files)
+    logger.debug("Ftp folders", files)
 
     # select which folders to load by comparing what we already have and what is available on the server
     year_load = []
@@ -155,8 +155,7 @@ def loading():
     # load the folders we are interested in
     if len(year_load) > 0:
         for i in year_load:
-            download_ftp_tree(ftp_server, i, f"{path}", pattern=None, overwrite=False,
-                              guess_by_extension=True)
+            download_ftp_tree(ftp_server, i, f"{path}", pattern=None, overwrite=False, guess_by_extension=True)
 
     # load the folder with data prior 2017
     pre_2017 = []
@@ -212,6 +211,5 @@ def loading():
                 for item in rest_years2:
                     if item in rest_present:
                         loading_file(ftp_server, item + ".zip")
-
 
     ftp_server.quit()
