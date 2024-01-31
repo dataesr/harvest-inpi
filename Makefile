@@ -1,4 +1,4 @@
-DOCKER_IMAGE_NAME=dataesr/harvest-inpi
+DOCKER_IMAGE_NAME=ghcr.io/dataesr/harvest-inpi
 CURRENT_VERSION=$(shell cat application/__init__.py | cut -d "'" -f 2)
 
 test: unit
