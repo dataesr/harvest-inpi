@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from deepdiff import DeepDiff
 from pymongo import MongoClient
 
-DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+DATA_PATH = os.getenv("MOUNTED_VOLUME_TEST")
 
 
 def check_date(dae: str) -> str:
@@ -106,37 +106,39 @@ def person_ref(bs, pb_n, ptdoc):
             lg_apps = len(apps)
             rg = 1
             for item in apps:
-                dic_app = {"publication-number": pb_n,
-                           "address-1": "",
-                           "address-2": "",
-                           "address-3": "",
-                           "mailcode": "",
-                           "pobox": "",
-                           "room": "",
-                           "address-floor": "",
-                           "building": "",
-                           "street": "",
-                           "city": "",
-                           "county": "",
-                           "state": "",
-                           "postcode": "",
-                           "country": "",
-                           "sequence": "",
-                           "type-party": person,
-                           "data-format-person": "",
-                           "prefix": "",
-                           "first-name": "",
-                           "middle-name": "",
-                           "last-name": "",
-                           "orgname": "",
-                           "name-complete": "",
-                           "suffix": "",
-                           "siren": "",
-                           "role": "",
-                           "department": "",
-                           "synonym": "",
-                           "designation": "",
-                           "application-number-fr": ptdoc["id"]}
+                dic_app = {
+                    "publication-number": pb_n,
+                    "address-1": "",
+                    "address-2": "",
+                    "address-3": "",
+                    "mailcode": "",
+                    "pobox": "",
+                    "room": "",
+                    "address-floor": "",
+                    "building": "",
+                    "street": "",
+                    "city": "",
+                    "county": "",
+                    "state": "",
+                    "postcode": "",
+                    "country": "",
+                    "sequence": "",
+                    "type-party": person,
+                    "data-format-person": "",
+                    "prefix": "",
+                    "first-name": "",
+                    "middle-name": "",
+                    "last-name": "",
+                    "orgname": "",
+                    "name-complete": "",
+                    "suffix": "",
+                    "siren": "",
+                    "role": "",
+                    "department": "",
+                    "synonym": "",
+                    "designation": "",
+                    "application-number-fr": ptdoc["id"],
+                }
 
                 clefs_dic = list(dic_app.keys())
                 if "sequence" in item.attrs.keys():
@@ -172,37 +174,39 @@ def person_ref(bs, pb_n, ptdoc):
                 liste.append(dic_app)
 
     if len(liste) == 0:
-        dic_app = {"publication-number": pb_n,
-                   "address-1": "",
-                   "address-2": "",
-                   "address-3": "",
-                   "mailcode": "",
-                   "pobox": "",
-                   "room": "",
-                   "address-floor": "",
-                   "building": "",
-                   "street": "",
-                   "city": "",
-                   "county": "",
-                   "state": "",
-                   "postcode": "",
-                   "country": "",
-                   "sequence": "",
-                   "type-party": "",
-                   "data-format-person": "",
-                   "prefix": "",
-                   "first-name": "",
-                   "middle-name": "",
-                   "last-name": "",
-                   "orgname": "",
-                   "name-complete": "",
-                   "suffix": "",
-                   "siren": "",
-                   "role": "",
-                   "department": "",
-                   "synonym": "",
-                   "designation": "",
-                   "application-number-fr": ptdoc["id"]}
+        dic_app = {
+            "publication-number": pb_n,
+            "address-1": "",
+            "address-2": "",
+            "address-3": "",
+            "mailcode": "",
+            "pobox": "",
+            "room": "",
+            "address-floor": "",
+            "building": "",
+            "street": "",
+            "city": "",
+            "county": "",
+            "state": "",
+            "postcode": "",
+            "country": "",
+            "sequence": "",
+            "type-party": "",
+            "data-format-person": "",
+            "prefix": "",
+            "first-name": "",
+            "middle-name": "",
+            "last-name": "",
+            "orgname": "",
+            "name-complete": "",
+            "suffix": "",
+            "siren": "",
+            "role": "",
+            "department": "",
+            "synonym": "",
+            "designation": "",
+            "application-number-fr": ptdoc["id"],
+        }
         liste.append(dic_app)
 
     df = pd.DataFrame(data=liste).drop_duplicates()
@@ -216,14 +220,16 @@ def pub_ref(bs, pb_n, ptdoc):
     pb_ref = bs.find_all("fr-publication-reference")
 
     for item in pb_ref:
-        dic_pnref = {"data-format-publication": "",
-                     "country": "",
-                     "publication-number": pb_n,
-                     "kind": "",
-                     "nature": "",
-                     "date-publication": "",
-                     "fr-bopinum": "",
-                     "application-number-fr": ptdoc["id"]}
+        dic_pnref = {
+            "data-format-publication": "",
+            "country": "",
+            "publication-number": pb_n,
+            "kind": "",
+            "nature": "",
+            "date-publication": "",
+            "fr-bopinum": "",
+            "application-number-fr": ptdoc["id"],
+        }
 
         clefs_pnref = list(dic_pnref)
         if "data-format" in item.attrs.keys():
@@ -236,7 +242,7 @@ def pub_ref(bs, pb_n, ptdoc):
             if dic_pnref["kind"] == "A1":
                 dic_pnref["nature"] = "Demande française"
             elif dic_pnref["kind"] == "A3":
-                dic_pnref["nature"] = "Certificat d\'utilité"
+                dic_pnref["nature"] = "Certificat d'utilité"
 
         if "date" in tags_item:
             dae = str(item.find("date").text)
@@ -260,12 +266,14 @@ def renewal_list(bs, pb_n, ptdoc):
         if ants:
             lg_ants = len(ants)
             for item in ants:
-                dic_ant = {"publication-number": pb_n,
-                           "type-payment": ant,
-                           "percentile": "",
-                           "date-payment": "",
-                           "amount": "",
-                           "application-number-fr": ptdoc["id"]}
+                dic_ant = {
+                    "publication-number": pb_n,
+                    "type-payment": ant,
+                    "percentile": "",
+                    "date-payment": "",
+                    "amount": "",
+                    "application-number-fr": ptdoc["id"],
+                }
 
                 clefs_dic = list(dic_ant.keys())
                 if "percentile" in item.attrs.keys():
@@ -285,12 +293,14 @@ def renewal_list(bs, pb_n, ptdoc):
                 liste.append(dic_ant)
 
     if len(liste) == 0:
-        dic_ant = {"publication-number": pb_n,
-                   "type-payment": "",
-                   "percentile": "",
-                   "date-payment": "",
-                   "amount": "",
-                   "application-number-fr": ptdoc["id"]}
+        dic_ant = {
+            "publication-number": pb_n,
+            "type-payment": "",
+            "percentile": "",
+            "date-payment": "",
+            "amount": "",
+            "application-number-fr": ptdoc["id"],
+        }
         liste.append(dic_ant)
 
     df = pd.DataFrame(data=liste).drop_duplicates()
@@ -300,18 +310,22 @@ def renewal_list(bs, pb_n, ptdoc):
 
 def search_list(bs, pb_n, ptdoc):
     srchl = ["fr-date-search-completed", "fr-date-search-supplemental"]
-    cor = {"fr-date-search-completed": "Preliminary search report",
-           "fr-date-search-supplemental": "Supplementary search report"}
+    cor = {
+        "fr-date-search-completed": "Preliminary search report",
+        "fr-date-search-supplemental": "Supplementary search report",
+    }
     liste = []
     for srch in srchl:
         srchs = bs.find_all(srch)
         if srchs:
             for item in srchs:
-                dic_srch = {"publication-number": pb_n,
-                            "type-search": cor[srch],
-                            "date-search": "",
-                            "fr-bopinum": "",
-                            "application-number-fr": ptdoc["id"]}
+                dic_srch = {
+                    "publication-number": pb_n,
+                    "type-search": cor[srch],
+                    "date-search": "",
+                    "fr-bopinum": "",
+                    "application-number-fr": ptdoc["id"],
+                }
 
                 clefs_dic = list(dic_srch.keys())
                 dic_srch["fr-bopinum"] = item.find("fr-bopinum").text
@@ -321,11 +335,13 @@ def search_list(bs, pb_n, ptdoc):
 
                 liste.append(dic_srch)
     if len(liste) == 0:
-        dic_srch = {"publication-number": pb_n,
-                    "type-search": "",
-                    "date-search": "",
-                    "fr-bopinum": "",
-                    "application-number-fr": ptdoc["id"]}
+        dic_srch = {
+            "publication-number": pb_n,
+            "type-search": "",
+            "date-search": "",
+            "fr-bopinum": "",
+            "application-number-fr": ptdoc["id"],
+        }
         liste.append(dic_srch)
 
     df = pd.DataFrame(data=liste).drop_duplicates()
@@ -428,13 +444,15 @@ def app_ref(bs, pb_n, ptdoc):
 
     if ap_ref:
         for item in ap_ref:
-            dic_apref = {"data-format-application": "",
-                         "doc-number": "",
-                         "appl-type": "",
-                         "country": "",
-                         "date-application": "",
-                         "application-number-fr": ptdoc["id"],
-                         "publication-number": pb_n}
+            dic_apref = {
+                "data-format-application": "",
+                "doc-number": "",
+                "appl-type": "",
+                "country": "",
+                "date-application": "",
+                "application-number-fr": ptdoc["id"],
+                "publication-number": pb_n,
+            }
 
             clefs_pnref = list(dic_apref)
             if "data-format" in item.attrs.keys():
@@ -450,23 +468,27 @@ def app_ref(bs, pb_n, ptdoc):
             lste_appref.append(dic_apref)
 
     else:
-        dic_apref = {"data-format-application": "",
-                     "doc-number": "",
-                     "appl-type": "",
-                     "country": "",
-                     "date-application": "",
-                     "application-number-fr": ptdoc["id"],
-                     "publication-number": pb_n}
+        dic_apref = {
+            "data-format-application": "",
+            "doc-number": "",
+            "appl-type": "",
+            "country": "",
+            "date-application": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pb_n,
+        }
         lste_appref.append(dic_apref)
 
     if len(lste_appref) == 0:
-        dic_apref = {"data-format-application": "",
-                     "doc-number": "",
-                     "appl-type": "",
-                     "country": "",
-                     "date-application": "",
-                     "application-number-fr": ptdoc["id"],
-                     "publication-number": pb_n}
+        dic_apref = {
+            "data-format-application": "",
+            "doc-number": "",
+            "appl-type": "",
+            "country": "",
+            "date-application": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pb_n,
+        }
         lste_appref.append(dic_apref)
 
     df = pd.DataFrame(data=lste_appref).drop_duplicates()
@@ -516,13 +538,15 @@ def prio_list(bs, pn_b, ptdoc):
 
     if prio_ref:
         for item in prio_ref:
-            dic_prio = {"sequence": "",
-                        "country": "",
-                        "kind": "",
-                        "priority-number": "",
-                        "date-priority": "",
-                        "application-number-fr": ptdoc["id"],
-                        "publication-number": pn_b}
+            dic_prio = {
+                "sequence": "",
+                "country": "",
+                "kind": "",
+                "priority-number": "",
+                "date-priority": "",
+                "application-number-fr": ptdoc["id"],
+                "publication-number": pn_b,
+            }
             clefs_prioref = list(dic_prio)
             tags_item = [tag.name for tag in item.find_all()]
             inter = list(set(clefs_prioref).intersection(set(tags_item)))
@@ -541,23 +565,27 @@ def prio_list(bs, pn_b, ptdoc):
             lste_prio.append(dic_prio)
 
     else:
-        dic_prio = {"sequence": "",
-                    "country": "",
-                    "kind": "",
-                    "priority-number": "",
-                    "date-priority": "",
-                    "application-number-fr": ptdoc["id"],
-                    "publication-number": pn_b}
+        dic_prio = {
+            "sequence": "",
+            "country": "",
+            "kind": "",
+            "priority-number": "",
+            "date-priority": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pn_b,
+        }
         lste_prio.append(dic_prio)
 
     if len(lste_prio) == 0:
-        dic_prio = {"sequence": "",
-                    "country": "",
-                    "kind": "",
-                    "priority-number": "",
-                    "date-priority": "",
-                    "application-number-fr": ptdoc["id"],
-                    "publication-number": pn_b}
+        dic_prio = {
+            "sequence": "",
+            "country": "",
+            "kind": "",
+            "priority-number": "",
+            "date-priority": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pn_b,
+        }
         lste_prio.append(dic_prio)
 
     df = pd.DataFrame(data=lste_prio).drop_duplicates()
@@ -571,12 +599,14 @@ def redoc_list(bs, pb_n, ptdoc):
 
     if rdc_ref:
         for item in rdc_ref:
-            dc_rdc = {"type-related-doc": "",
-                      "country": "",
-                      "doc-number": "",
-                      "date-document": "",
-                      "application-number-fr": ptdoc["id"],
-                      "publication-number": pb_n}
+            dc_rdc = {
+                "type-related-doc": "",
+                "country": "",
+                "doc-number": "",
+                "date-document": "",
+                "application-number-fr": ptdoc["id"],
+                "publication-number": pb_n,
+            }
 
             clefs_rdc = list(dc_rdc)
             tags_item = [tag.name for tag in item.find_all()]
@@ -590,27 +620,31 @@ def redoc_list(bs, pb_n, ptdoc):
             elif "name" in tags_item:
                 dc_rdc["type-related-doc"] = "CCP rattaché"
             elif "utility-model-basis" and "parent-doc" in tags_item:
-                dc_rdc["type-related-doc"] = "transformation volontaire du brevet en certificat d\'utilité"
+                dc_rdc["type-related-doc"] = "transformation volontaire du brevet en certificat d'utilité"
             elif "date" in tags_item:
                 dae = item.find("date").text
                 dc_rdc["date-document"] = check_date(dae)
             lste_rdc.append(dc_rdc)
     else:
-        dc_rdc = {"type-related-doc": "",
-                  "country": "",
-                  "doc-number": "",
-                  "date-document": "",
-                  "application-number-fr": ptdoc["id"],
-                  "publication-number": pb_n}
+        dc_rdc = {
+            "type-related-doc": "",
+            "country": "",
+            "doc-number": "",
+            "date-document": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pb_n,
+        }
         lste_rdc.append(dc_rdc)
 
     if len(lste_rdc) == 0:
-        dc_rdc = {"type-related-doc": "",
-                  "country": "",
-                  "doc-number": "",
-                  "date-document": "",
-                  "application-number-fr": ptdoc["id"],
-                  "publication-number": pb_n}
+        dc_rdc = {
+            "type-related-doc": "",
+            "country": "",
+            "doc-number": "",
+            "date-document": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pb_n,
+        }
         lste_rdc.append(dc_rdc)
 
     df = pd.DataFrame(data=lste_rdc).drop_duplicates()
@@ -624,12 +658,14 @@ def oldipc_list(bs, pb_n, ptdoc):
 
     if oldipc_ref:
         for item in oldipc_ref:
-            dc_oipc = {"edition": "",
-                       "main-classification": "",
-                       "further-classification-sequence": "",
-                       "further-classification": "",
-                       "application-number-fr": ptdoc["id"],
-                       "publication-number": pb_n}
+            dc_oipc = {
+                "edition": "",
+                "main-classification": "",
+                "further-classification-sequence": "",
+                "further-classification": "",
+                "application-number-fr": ptdoc["id"],
+                "publication-number": pb_n,
+            }
 
             clefs_oipc = list(dc_oipc)
             tags_item = [tag.name for tag in item.find_all()]
@@ -640,21 +676,25 @@ def oldipc_list(bs, pb_n, ptdoc):
                 dc_oipc[clef] = item.find(clef).text
             lste_oipc.append(dc_oipc)
     else:
-        dc_oipc = {"edition": "",
-                   "main-classification": "",
-                   "further-classification-sequence": "",
-                   "further-classification": "",
-                   "application-number-fr": ptdoc["id"],
-                   "publication-number": pb_n}
+        dc_oipc = {
+            "edition": "",
+            "main-classification": "",
+            "further-classification-sequence": "",
+            "further-classification": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pb_n,
+        }
         lste_oipc.append(dc_oipc)
 
     if len(lste_oipc) == 0:
-        dc_oipc = {"edition": "",
-                   "main-classification": "",
-                   "further-classification-sequence": "",
-                   "further-classification": "",
-                   "application-number-fr": ptdoc["id"],
-                   "publication-number": pb_n}
+        dc_oipc = {
+            "edition": "",
+            "main-classification": "",
+            "further-classification-sequence": "",
+            "further-classification": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pb_n,
+        }
         lste_oipc.append(dc_oipc)
 
     df = pd.DataFrame(data=lste_oipc).drop_duplicates()
@@ -668,10 +708,12 @@ def ipc_list(bs, pb_n, ptdoc):
 
     if ipc_ref:
         for item in ipc_ref:
-            dc_ipc = {"classification": "",
-                      "sequence": "",
-                      "application-number-fr": ptdoc["id"],
-                      "publication-number": pb_n}
+            dc_ipc = {
+                "classification": "",
+                "sequence": "",
+                "application-number-fr": ptdoc["id"],
+                "publication-number": pb_n,
+            }
 
             clefs_ipc = list(dc_ipc)
             tags_item = [tag.name for tag in item.find_all()]
@@ -681,17 +723,21 @@ def ipc_list(bs, pb_n, ptdoc):
                 dc_ipc["sequence"] = int(item["sequence"])
             lste_ipc.append(dc_ipc)
     else:
-        dc_ipc = {"classification": "",
-                  "sequence": "",
-                  "application-number-fr": ptdoc["id"],
-                  "publication-number": pb_n}
+        dc_ipc = {
+            "classification": "",
+            "sequence": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pb_n,
+        }
         lste_ipc.append(dc_ipc)
 
     if len(lste_ipc) == 0:
-        dc_ipc = {"classification": "",
-                  "sequence": "",
-                  "application-number-fr": ptdoc["id"],
-                  "publication-number": pb_n}
+        dc_ipc = {
+            "classification": "",
+            "sequence": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pb_n,
+        }
         lste_ipc.append(dc_ipc)
 
     df = pd.DataFrame(data=lste_ipc).drop_duplicates()
@@ -705,18 +751,20 @@ def cpc_list(bs, pb_n, ptdoc):
 
     if cpc_ref:
         for item in cpc_ref:
-            dc_cpc = {"sequence": "",
-                      "scheme": "",
-                      "office": "",
-                      "date-cpc": "",
-                      "symbol": "",
-                      "position": "",
-                      "value": "",
-                      "status": "",
-                      "source": "",
-                      "date-classification": "",
-                      "application-number-fr": ptdoc["id"],
-                      "publication-number": pb_n}
+            dc_cpc = {
+                "sequence": "",
+                "scheme": "",
+                "office": "",
+                "date-cpc": "",
+                "symbol": "",
+                "position": "",
+                "value": "",
+                "status": "",
+                "source": "",
+                "date-classification": "",
+                "application-number-fr": ptdoc["id"],
+                "publication-number": pb_n,
+            }
 
             clefs_cpc = list(dc_cpc)
             tags_item = [tag.name for tag in item.find_all()]
@@ -725,8 +773,8 @@ def cpc_list(bs, pb_n, ptdoc):
             if scheme_ref:
                 if len(scheme_ref) == 1:
                     for it in scheme_ref:
-                        dc_cpc["scheme"] = it['scheme']
-                        dc_cpc["office"] = it['office']
+                        dc_cpc["scheme"] = it["scheme"]
+                        dc_cpc["office"] = it["office"]
             if "sequence" in item.attrs.keys():
                 dc_cpc["sequence"] = int(item["sequence"])
             if "classification-symbol" in tags_item:
@@ -750,33 +798,37 @@ def cpc_list(bs, pb_n, ptdoc):
             lste_cpc.append(dc_cpc)
 
     else:
-        dc_cpc = {"sequence": "",
-                  "scheme": "",
-                  "office": "",
-                  "date-cpc": "",
-                  "symbol": "",
-                  "position": "",
-                  "value": "",
-                  "status": "",
-                  "source": "",
-                  "date-classification": "",
-                  "application-number-fr": ptdoc["id"],
-                  "publication-number": pb_n}
+        dc_cpc = {
+            "sequence": "",
+            "scheme": "",
+            "office": "",
+            "date-cpc": "",
+            "symbol": "",
+            "position": "",
+            "value": "",
+            "status": "",
+            "source": "",
+            "date-classification": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pb_n,
+        }
         lste_cpc.append(dc_cpc)
 
     if len(lste_cpc) == 0:
-        dc_cpc = {"sequence": "",
-                  "scheme": "",
-                  "office": "",
-                  "date-cpc": "",
-                  "symbol": "",
-                  "position": "",
-                  "value": "",
-                  "status": "",
-                  "source": "",
-                  "date-classification": "",
-                  "application-number-fr": ptdoc["id"],
-                  "publication-number": pb_n}
+        dc_cpc = {
+            "sequence": "",
+            "scheme": "",
+            "office": "",
+            "date-cpc": "",
+            "symbol": "",
+            "position": "",
+            "value": "",
+            "status": "",
+            "source": "",
+            "date-classification": "",
+            "application-number-fr": ptdoc["id"],
+            "publication-number": pb_n,
+        }
         lste_cpc.append(dc_cpc)
 
     df = pd.DataFrame(data=lste_cpc).drop_duplicates()
@@ -791,12 +843,12 @@ def update_db(file_name: str, data_xml: str):
     list_dir.sort()
 
     client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
-    print(client.server_info(), flush=True)
+    # print(client.server_info(), flush=True)
 
-    db = client['inpi']
+    db = client["inpi"]
 
     publication = db.publication
-    publication.create_index("publication-number", unique = True)
+    publication.create_index("publication-number", unique=True)
 
     person = db.person
 
@@ -851,24 +903,25 @@ def update_db(file_name: str, data_xml: str):
 
         stats = stat_pub(elem_file, pn)
 
-        dic_pn = {"lang": pn["lang"],
-                  "application-number-fr": pn["id"],
-                  "country": pn["country"],
-                  "date-produced": date_produced,
-                  "publication-number": pub_n,
-                  "status": stats,
-                  "fr-nature": "",
-                  "fr-extension-territory": "",
-                  "title": "",
-                  "abstract": "",
-                  "kind-grant": "",
-                  "date-grant": "",
-                  "fr-bopinum-grant": "",
-                  "date-refusal": "",
-                  "date-withdrawal": "",
-                  "date-lapsed": "",
-                  "fr-bopinum-lapsed": ""
-                  }
+        dic_pn = {
+            "lang": pn["lang"],
+            "application-number-fr": pn["id"],
+            "country": pn["country"],
+            "date-produced": date_produced,
+            "publication-number": pub_n,
+            "status": stats,
+            "fr-nature": "",
+            "fr-extension-territory": "",
+            "title": "",
+            "abstract": "",
+            "kind-grant": "",
+            "date-grant": "",
+            "fr-bopinum-grant": "",
+            "date-refusal": "",
+            "date-withdrawal": "",
+            "date-lapsed": "",
+            "fr-bopinum-lapsed": "",
+        }
 
         ex = bs_data.find("fr-extension")
 
@@ -930,89 +983,123 @@ def update_db(file_name: str, data_xml: str):
 
             rnw = renewal_list(ptlife, pub_n, pn)
 
-            dic_errata = {"publication-number": pub_n,
-                          "part": "",
-                          "text": "",
-                          "date-errata": "",
-                          "fr-bopinum": "",
-                          "application-number": pn["id"]}
+            dic_errata = {
+                "publication-number": pub_n,
+                "part": "",
+                "text": "",
+                "date-errata": "",
+                "fr-bopinum": "",
+                "application-number": pn["id"],
+            }
 
             erra = errata_list(ptlife, dic_errata)
 
-            dic_ins = {"publication-number": pub_n,
-                       "registered-number": "",
-                       "date-inscription": "",
-                       "code-inscription": "",
-                       "nature-inscription": "",
-                       "fr-bopinum": "",
-                       "application-number": pn["id"]}
+            dic_ins = {
+                "publication-number": pub_n,
+                "registered-number": "",
+                "date-inscription": "",
+                "code-inscription": "",
+                "nature-inscription": "",
+                "fr-bopinum": "",
+                "application-number": pn["id"],
+            }
 
             ins = inscr_list(ptlife, dic_ins)
 
             sear = search_list(ptlife, pub_n, pn)
 
-            dic_amended = {"publication-number": pub_n,
-                           "claim": "",
-                           "application-number": pn["id"]}
+            dic_amended = {"publication-number": pub_n, "claim": "", "application-number": pn["id"]}
 
             amend = amended_list(ptlife, dic_amended)
 
-            dic_citations = {"type-citation": "",
-                             "citation": "",
-                             "country": "",
-                             "doc-number": "",
-                             "date-doc": "",
-                             "passage": "",
-                             "category": "",
-                             "claim": "",
-                             "application-number-fr": pn["id"],
-                             "publication-number": pub_n}
+            dic_citations = {
+                "type-citation": "",
+                "citation": "",
+                "country": "",
+                "doc-number": "",
+                "date-doc": "",
+                "passage": "",
+                "category": "",
+                "claim": "",
+                "application-number-fr": pn["id"],
+                "publication-number": pub_n,
+            }
 
             cit = cit_list(ptlife, dic_citations)
 
         else:
-            rnw = pd.DataFrame(data=[{"publication-number": pub_n,
-                                      "type-payment": "",
-                                      "percentile": "",
-                                      "date-payment": "",
-                                      "amount": "",
-                                      "application-number-fr": pn["id"]}])
+            rnw = pd.DataFrame(
+                data=[
+                    {
+                        "publication-number": pub_n,
+                        "type-payment": "",
+                        "percentile": "",
+                        "date-payment": "",
+                        "amount": "",
+                        "application-number-fr": pn["id"],
+                    }
+                ]
+            )
 
-            erra = pd.DataFrame(data=[{"publication-number": pub_n,
-                                       "part": "",
-                                       "text": "",
-                                       "date-errata": "",
-                                       "fr-bopinum": "",
-                                       "application-number": pn["id"]}]).drop_duplicates()
+            erra = pd.DataFrame(
+                data=[
+                    {
+                        "publication-number": pub_n,
+                        "part": "",
+                        "text": "",
+                        "date-errata": "",
+                        "fr-bopinum": "",
+                        "application-number": pn["id"],
+                    }
+                ]
+            ).drop_duplicates()
 
-            ins = pd.DataFrame(data=[{"publication-number": pub_n,
-                                      "registered-number": "",
-                                      "date-inscription": "",
-                                      "code-inscription": "",
-                                      "nature-inscription": "",
-                                      "fr-bopinum": "",
-                                      "application-number": pn["id"]}]).drop_duplicates()
+            ins = pd.DataFrame(
+                data=[
+                    {
+                        "publication-number": pub_n,
+                        "registered-number": "",
+                        "date-inscription": "",
+                        "code-inscription": "",
+                        "nature-inscription": "",
+                        "fr-bopinum": "",
+                        "application-number": pn["id"],
+                    }
+                ]
+            ).drop_duplicates()
 
-            sear = pd.DataFrame(data=[{"publication-number": pub_n,
-                                       "type-search": "",
-                                       "date-search": "",
-                                       "fr-bopinum": "",
-                                       "application-number-fr": pn["id"]}]).drop_duplicates()
+            sear = pd.DataFrame(
+                data=[
+                    {
+                        "publication-number": pub_n,
+                        "type-search": "",
+                        "date-search": "",
+                        "fr-bopinum": "",
+                        "application-number-fr": pn["id"],
+                    }
+                ]
+            ).drop_duplicates()
 
-            amend = pd.DataFrame(data=[{"publication-number": pub_n,
-                                        "claim": "",
-                                        "application-number": pn["id"]}]).drop_duplicates()
+            amend = pd.DataFrame(
+                data=[{"publication-number": pub_n, "claim": "", "application-number": pn["id"]}]
+            ).drop_duplicates()
 
-            cit = pd.DataFrame(data=[{"type-citation": "",
-                                      "citation": "",
-                                      "country": "",
-                                      "doc-number": "",
-                                      "date-doc": "",
-                                      "passage": "",
-                                      "category": "",
-                                      "claim": "",
-                                      "application-number-fr": pn["id"],
-                                      "publication-number": pub_n}]).drop_duplicates()
+            cit = pd.DataFrame(
+                data=[
+                    {
+                        "type-citation": "",
+                        "citation": "",
+                        "country": "",
+                        "doc-number": "",
+                        "date-doc": "",
+                        "passage": "",
+                        "category": "",
+                        "claim": "",
+                        "application-number-fr": pn["id"],
+                        "publication-number": pub_n,
+                    }
+                ]
+            ).drop_duplicates()
 
         dic_pn = pd.DataFrame(data=[dic_pn]).drop_duplicates()
 
@@ -1025,7 +1112,6 @@ def update_db(file_name: str, data_xml: str):
         ipcs = ipc_list(bs_data, pub_n, pn)
 
         cpcs = cpc_list(bs_data, pub_n, pn)
-
 
     else:
         dic_pn = pd.DataFrame(data=[])
@@ -1076,14 +1162,16 @@ def update_db(file_name: str, data_xml: str):
     if len(appl) > 0:
         liste_app.append(appl)
         for _, app in appl.iterrows():
-            qr = {"publication-number": app["publication-number"],
-                  "application-number-fr": app["application-number-fr"],
-                  "sequence": app["sequence"],
-                  "type-party": app["type-party"],
-                  "first-name": app["first-name"],
-                  "middle-name": app["middle-name"],
-                  "last-name": app["last-name"],
-                  "orgname": app["orgname"]}
+            qr = {
+                "publication-number": app["publication-number"],
+                "application-number-fr": app["application-number-fr"],
+                "sequence": app["sequence"],
+                "type-party": app["type-party"],
+                "first-name": app["first-name"],
+                "middle-name": app["middle-name"],
+                "last-name": app["last-name"],
+                "orgname": app["orgname"],
+            }
             mydoc = list(person.find(qr))
             if len(mydoc) == 0:
                 app_id = person.insert_one(app.to_dict()).inserted_id
@@ -1107,13 +1195,15 @@ def update_db(file_name: str, data_xml: str):
     if len(pref) > 0:
         liste_pbref.append(pref)
         for _, pr in pref.iterrows():
-            qr = {"publication-number": pr["publication-number"],
-                  "application-number-fr": pr["application-number-fr"],
-                  "data-format-publication": pr["data-format-publication"],
-                  "kind": pr["kind"],
-                  "nature": pr["nature"],
-                  "date-publication": pr["date-publication"],
-                  "fr-bopinum": pr["fr-bopinum"]}
+            qr = {
+                "publication-number": pr["publication-number"],
+                "application-number-fr": pr["application-number-fr"],
+                "data-format-publication": pr["data-format-publication"],
+                "kind": pr["kind"],
+                "nature": pr["nature"],
+                "date-publication": pr["date-publication"],
+                "fr-bopinum": pr["fr-bopinum"],
+            }
             mydoc = list(publicationRef.find(qr))
             if len(mydoc) == 0:
                 pr_id = publicationRef.insert_one(pr.to_dict()).inserted_id
@@ -1137,13 +1227,15 @@ def update_db(file_name: str, data_xml: str):
     if len(aref) > 0:
         liste_apref.append(aref)
         for _, ar in aref.iterrows():
-            qr = {"data-format-application": ar["data-format-application"],
-                  "doc-number": ar["doc-number"],
-                  "appl-type": ar["appl-type"],
-                  "country": ar["country"],
-                  "date-application": ar["date-application"],
-                  "application-number-fr": ar["application-number-fr"],
-                  "publication-number": ar["publication-number"]}
+            qr = {
+                "data-format-application": ar["data-format-application"],
+                "doc-number": ar["doc-number"],
+                "appl-type": ar["appl-type"],
+                "country": ar["country"],
+                "date-application": ar["date-application"],
+                "application-number-fr": ar["application-number-fr"],
+                "publication-number": ar["publication-number"],
+            }
             mydoc = list(application.find(qr))
             if len(mydoc) == 0:
                 ar_id = application.insert_one(ar.to_dict()).inserted_id
@@ -1167,11 +1259,13 @@ def update_db(file_name: str, data_xml: str):
     if len(rnw) > 0:
         liste_renewal.append(rnw)
         for _, rn in rnw.iterrows():
-            qr = {"publication-number": rn["publication-number"],
-                  "type-payment": rn["type-payment"],
-                  "percentile": rn["percentile"],
-                  "date-payment": rn["date-payment"],
-                  "amount": rn["amount"]}
+            qr = {
+                "publication-number": rn["publication-number"],
+                "type-payment": rn["type-payment"],
+                "percentile": rn["percentile"],
+                "date-payment": rn["date-payment"],
+                "amount": rn["amount"],
+            }
             mydoc = list(renewal.find(qr))
             if len(mydoc) == 0:
                 rnw_id = renewal.insert_one(rn.to_dict()).inserted_id
@@ -1195,11 +1289,13 @@ def update_db(file_name: str, data_xml: str):
     if len(erra) > 0:
         liste_errata.append(erra)
         for _, ert in erra.iterrows():
-            qr = {"publication-number": ert["publication-number"],
-                  "part": ert["part"],
-                  "text": ert["text"],
-                  "date-errata": ert["date-errata"],
-                  "fr-bopinum": ert["fr-bopinum"]}
+            qr = {
+                "publication-number": ert["publication-number"],
+                "part": ert["part"],
+                "text": ert["text"],
+                "date-errata": ert["date-errata"],
+                "fr-bopinum": ert["fr-bopinum"],
+            }
             mydoc = list(errata.find(qr))
             if len(mydoc) == 0:
                 err_id = errata.insert_one(ert.to_dict()).inserted_id
@@ -1223,13 +1319,15 @@ def update_db(file_name: str, data_xml: str):
     if len(ins) > 0:
         liste_ins.append(ins)
         for _, insc in ins.iterrows():
-            qr = {"publication-number": insc["publication-number"],
-                  "registered-number": insc["registered-number"],
-                  "date-inscription": insc["date-inscription"],
-                  "code-inscription": insc["code-inscription"],
-                  "nature-inscription": insc["nature-inscription"],
-                  "fr-bopinum": insc["fr-bopinum"],
-                  "application-number": insc["application-number"]}
+            qr = {
+                "publication-number": insc["publication-number"],
+                "registered-number": insc["registered-number"],
+                "date-inscription": insc["date-inscription"],
+                "code-inscription": insc["code-inscription"],
+                "nature-inscription": insc["nature-inscription"],
+                "fr-bopinum": insc["fr-bopinum"],
+                "application-number": insc["application-number"],
+            }
             mydoc = list(inscription.find(qr))
             if len(mydoc) == 0:
                 ins_id = inscription.insert_one(insc.to_dict()).inserted_id
@@ -1253,8 +1351,7 @@ def update_db(file_name: str, data_xml: str):
     if len(sear) > 0:
         liste_search.append(sear)
         for _, ser in sear.iterrows():
-            qr = {"publication-number": ser["publication-number"],
-                  "type-search": ser["type-search"]}
+            qr = {"publication-number": ser["publication-number"], "type-search": ser["type-search"]}
             mydoc = list(search.find(qr))
             if len(mydoc) == 0:
                 ser_id = search.insert_one(ser.to_dict()).inserted_id
@@ -1278,8 +1375,7 @@ def update_db(file_name: str, data_xml: str):
     if len(amend) > 0:
         liste_amended.append(amend)
         for _, ame in amend.iterrows():
-            qr = {"publication-number": ame["publication-number"],
-                  "claim": ame["claim"]}
+            qr = {"publication-number": ame["publication-number"], "claim": ame["claim"]}
             mydoc = list(amendedClaim.find(qr))
             if len(mydoc) == 0:
                 ame_id = amendedClaim.insert_one(ame.to_dict()).inserted_id
@@ -1303,17 +1399,18 @@ def update_db(file_name: str, data_xml: str):
     if len(cit) > 0:
         liste_citation.append(cit)
         for _, ct in cit.iterrows():
-            qr = {"publication-number": ct["publication-number"],
-                  "application-number-fr": ct["application-number-fr"],
-                  "type-citation": ct["type-citation"],
-                  "citation": ct["citation"],
-                  "country": ct["country"],
-                  "doc-number": ct["doc-number"],
-                  "date-doc": ct["date-doc"],
-                  "passage": ct["passage"],
-                  "category": ct["category"],
-                  "claim": ct["claim"]
-                  }
+            qr = {
+                "publication-number": ct["publication-number"],
+                "application-number-fr": ct["application-number-fr"],
+                "type-citation": ct["type-citation"],
+                "citation": ct["citation"],
+                "country": ct["country"],
+                "doc-number": ct["doc-number"],
+                "date-doc": ct["date-doc"],
+                "passage": ct["passage"],
+                "category": ct["category"],
+                "claim": ct["claim"],
+            }
             mydoc = list(citation.find(qr))
             if len(mydoc) == 0:
                 cit_id = citation.insert_one(ct.to_dict()).inserted_id
@@ -1337,14 +1434,15 @@ def update_db(file_name: str, data_xml: str):
     if len(prio) > 0:
         liste_priority.append(prio)
         for _, pri in prio.iterrows():
-            qr = {"publication-number": pri["publication-number"],
-                  "application-number-fr": pri["application-number-fr"],
-                  "sequence": pri["sequence"],
-                  "country": pri["country"],
-                  "kind": pri["kind"],
-                  "priority-number": pri["priority-number"],
-                  "date-priority": pri["date-priority"]
-                  }
+            qr = {
+                "publication-number": pri["publication-number"],
+                "application-number-fr": pri["application-number-fr"],
+                "sequence": pri["sequence"],
+                "country": pri["country"],
+                "kind": pri["kind"],
+                "priority-number": pri["priority-number"],
+                "date-priority": pri["date-priority"],
+            }
             mydoc = list(priority.find(qr))
             if len(mydoc) == 0:
                 prio_id = priority.insert_one(pri.to_dict()).inserted_id
@@ -1368,12 +1466,14 @@ def update_db(file_name: str, data_xml: str):
     if len(redoc) > 0:
         liste_redoc.append(redoc)
         for _, rdc in redoc.iterrows():
-            qr = {"type-related-doc": rdc["type-related-doc"],
-                  "country": rdc["country"],
-                  "doc-number": rdc["doc-number"],
-                  "date-document": rdc["date-document"],
-                  "application-number-fr": rdc["application-number-fr"],
-                  "publication-number": rdc["publication-number"]}
+            qr = {
+                "type-related-doc": rdc["type-related-doc"],
+                "country": rdc["country"],
+                "doc-number": rdc["doc-number"],
+                "date-document": rdc["date-document"],
+                "application-number-fr": rdc["application-number-fr"],
+                "publication-number": rdc["publication-number"],
+            }
             mydoc = list(relatedDocument.find(qr))
             if len(mydoc) == 0:
                 rdc_id = relatedDocument.insert_one(rdc.to_dict()).inserted_id
@@ -1397,12 +1497,14 @@ def update_db(file_name: str, data_xml: str):
     if len(oldipc) > 0:
         liste_oldipc.append(oldipc)
         for _, oipc in oldipc.iterrows():
-            qr = {"edition": oipc["edition"],
-                  "main-classification": oipc["main-classification"],
-                  "further-classification-sequence": oipc["further-classification-sequence"],
-                  "further-classification": oipc["further-classification"],
-                  "application-number-fr": oipc["application-number-fr"],
-                  "publication-number": oipc["publication-number"]}
+            qr = {
+                "edition": oipc["edition"],
+                "main-classification": oipc["main-classification"],
+                "further-classification-sequence": oipc["further-classification-sequence"],
+                "further-classification": oipc["further-classification"],
+                "application-number-fr": oipc["application-number-fr"],
+                "publication-number": oipc["publication-number"],
+            }
             mydoc = list(oldIpc.find(qr))
             if len(mydoc) == 0:
                 oipc_id = oldIpc.insert_one(oipc.to_dict()).inserted_id
@@ -1426,10 +1528,12 @@ def update_db(file_name: str, data_xml: str):
     if len(ipcs) > 0:
         liste_ipc.append(ipcs)
         for _, ip in ipcs.iterrows():
-            qr = {"classification": ip["classification"],
-                  "sequence": ip["sequence"],
-                  "application-number-fr": ip["application-number-fr"],
-                  "publication-number": ip["publication-number"]}
+            qr = {
+                "classification": ip["classification"],
+                "sequence": ip["sequence"],
+                "application-number-fr": ip["application-number-fr"],
+                "publication-number": ip["publication-number"],
+            }
             mydoc = list(ipc.find(qr))
             if len(mydoc) == 0:
                 ipc_id = ipc.insert_one(ip.to_dict()).inserted_id
@@ -1453,18 +1557,20 @@ def update_db(file_name: str, data_xml: str):
     if len(cpcs) > 0:
         liste_cpc.append(cpcs)
         for _, cp in cpcs.iterrows():
-            qr = {"sequence": cp["sequence"],
-                  "scheme": cp["scheme"],
-                  "office": cp["office"],
-                  "date-cpc": cp["date-cpc"],
-                  "symbol": cp["symbol"],
-                  "position": cp["position"],
-                  "value": cp["value"],
-                  "status": cp["status"],
-                  "source": cp["application-number-fr"],
-                  "date-classification": cp["application-number-fr"],
-                  "application-number-fr": cp["application-number-fr"],
-                  "publication-number": cp["publication-number"]}
+            qr = {
+                "sequence": cp["sequence"],
+                "scheme": cp["scheme"],
+                "office": cp["office"],
+                "date-cpc": cp["date-cpc"],
+                "symbol": cp["symbol"],
+                "position": cp["position"],
+                "value": cp["value"],
+                "status": cp["status"],
+                "source": cp["application-number-fr"],
+                "date-classification": cp["application-number-fr"],
+                "application-number-fr": cp["application-number-fr"],
+                "publication-number": cp["publication-number"],
+            }
             mydoc = list(cpc.find(qr))
             if len(mydoc) == 0:
                 cpc_id = cpc.insert_one(cp.to_dict()).inserted_id
