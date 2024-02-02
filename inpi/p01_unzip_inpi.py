@@ -19,17 +19,23 @@ from inpi import p02_lecture_xml as p02
 from pymongo import MongoClient
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+DATA_PATH = os.getenv("MOUNTED_VOLUME_TEST")
 
 
 global session
-session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
+session = boto3.Session(
+    region_name="gra",
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+)
 
 global conn
-conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                          endpoint_url=os.getenv("ENDPOINT_URL"))
+conn = session.client(
+    "s3",
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    endpoint_url=os.getenv("ENDPOINT_URL"),
+)
 print("Connexion AWS S3", flush=True)
 
 
@@ -42,7 +48,7 @@ def get_logger(name):
         return loggers[name]
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
-    fmt = '%(asctime)s - %(threadName)s - %(levelname)s - %(message)s'
+    fmt = "%(asctime)s - %(threadName)s - %(levelname)s - %(message)s"
     formatter = logging.Formatter(fmt)
 
     ch = logging.StreamHandler(sys.stdout)
@@ -62,12 +68,12 @@ def subset_df(df: pd.DataFrame) -> dict:
     prct10 = int(round(len(df) * 10 / 100, 0))
     dict_nb = {}
     indices = list(df.index)
-    listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
+    listes_indices = [indices[i : i + prct10] for i in range(0, len(indices), prct10)]
     i = 1
     for liste in listes_indices:
         min_ind = np.min(liste)
         max_ind = np.max(liste) + 1
-        dict_nb["df" + str(i)] = df.iloc[min_ind: max_ind, :]
+        dict_nb["df" + str(i)] = df.iloc[min_ind:max_ind, :]
         i = i + 1
 
     return dict_nb
@@ -110,7 +116,7 @@ def res_futures(dict_nb: dict, query):
                 res.append(data)
                 jointure = pd.concat(res)
             except Exception as exc:
-                print('%r generated an exception: %s' % (req, exc), flush=True)
+                print("%r generated an exception: %s" % (req, exc), flush=True)
 
 
 def mongo_fill(df: pd.DataFrame):
@@ -144,11 +150,11 @@ def unzip():
     dir2 = os.listdir(PATH)
 
     # unzip data pre-2017 if not already done
-    if 'Biblio_FR_2010-2016.tar' in list_dir:
-        my_tar = tarfile.open('Biblio_FR_2010-2016.tar')
-        my_tar.extractall('.')
+    if "Biblio_FR_2010-2016.tar" in list_dir:
+        my_tar = tarfile.open("Biblio_FR_2010-2016.tar")
+        my_tar.extractall(".")
         my_tar.close()
-        os.remove('Biblio_FR_2010-2016.tar')
+        os.remove("Biblio_FR_2010-2016.tar")
 
     # get all the full data paths
     paths = []
@@ -192,7 +198,7 @@ def unzip():
             for file in lzip:
                 nfile = file.replace(path, "")
                 nfile = nfile.replace(".zip", "")
-                with zipfile.ZipFile(file, 'r') as zip_ref:
+                with zipfile.ZipFile(file, "r") as zip_ref:
                     lfiles = zip_ref.namelist()
                     lfiles = [re.findall(".+\.zip", item) for item in lfiles]
                     lfiles = [item for item in lfiles if item]
@@ -255,11 +261,11 @@ def unzip():
     clefs = list(dc_reste.keys())
     for clef in clefs:
         for item in dc_reste[clef]:
-            with zipfile.ZipFile(clef + item + ".zip", 'r') as zip_ref:
+            with zipfile.ZipFile(clef + item + ".zip", "r") as zip_ref:
                 zip_ref.extractall(clef + item)
                 fol = glob.glob(f"{clef}{item}/{item}/doc/*.zip")
                 for fl in fol:
-                    with zipfile.ZipFile(fl, 'r') as zip_ref:
+                    with zipfile.ZipFile(fl, "r") as zip_ref:
                         lfiles = zip_ref.namelist()
                         lfiles = [re.findall(".+\d+\.xml", fl) for fl in lfiles]
                         lfiles = [it for it in lfiles if it]
@@ -306,11 +312,11 @@ def unzip():
     clefs = list(dc_doc.keys())
     for clef in clefs:
         for item in dc_doc[clef]:
-            with zipfile.ZipFile(clef + item + ".zip", 'r') as zip_ref:
+            with zipfile.ZipFile(clef + item + ".zip", "r") as zip_ref:
                 zip_ref.extractall(clef + item)
                 fol = glob.glob(f"{clef}{item}/doc/*.zip")
                 for fl in fol:
-                    with zipfile.ZipFile(fl, 'r') as zip_ref:
+                    with zipfile.ZipFile(fl, "r") as zip_ref:
                         lfiles = zip_ref.namelist()
                         lfiles = [re.findall(".+\d+\.xml", fl) for fl in lfiles]
                         lfiles = [it for it in lfiles if it]
@@ -370,7 +376,7 @@ def unzip():
     for path in paths2:
         dos = glob.glob(f"{path}*.zip")
         for item in dos:
-            with zipfile.ZipFile(item, 'r') as zip_ref:
+            with zipfile.ZipFile(item, "r") as zip_ref:
                 lfiles = zip_ref.namelist()
                 lfiles = [re.findall(".+\d+\.xml", it) for it in lfiles]
                 lfiles = [it for it in lfiles if it]
@@ -423,7 +429,7 @@ def unzip():
         nom = file.replace(".zip", "")
         nom = nom.split("_")
         annee = nom[len(nom) - 2]
-        with zipfile.ZipFile(file, 'r') as zip_ref:
+        with zipfile.ZipFile(file, "r") as zip_ref:
             lfiles = zip_ref.namelist()
             lfiles = [re.findall(".+\d+\.xml", item) for item in lfiles]
             lfiles = [item for item in lfiles if item]
@@ -462,12 +468,12 @@ def unzip():
     clefs = list(dc_multi.keys())
     for clef in clefs:
         for item in dc_multi[clef]:
-            with zipfile.ZipFile(clef + item + ".zip", 'r') as zip_ref:
+            with zipfile.ZipFile(clef + item + ".zip", "r") as zip_ref:
                 zip_ref.extractall(clef + item)
                 fol = glob.glob(f"{clef}{item}/*.zip")
                 if fol:
                     for fl in fol:
-                        with zipfile.ZipFile(fl, 'r') as zip_ref:
+                        with zipfile.ZipFile(fl, "r") as zip_ref:
                             lfiles = zip_ref.namelist()
                             lfiles = [re.findall(".+\d+\.xml", fl) for fl in lfiles]
                             lfiles = [it for it in lfiles if it]
@@ -478,7 +484,7 @@ def unzip():
             if os.path.isdir(f"{clef}{item}/doc/"):
                 fol = glob.glob(f"{clef}{item}/doc/*.zip")
                 for fl in fol:
-                    with zipfile.ZipFile(fl, 'r') as zip_ref:
+                    with zipfile.ZipFile(fl, "r") as zip_ref:
                         lfiles = zip_ref.namelist()
                         lfiles = [re.findall(".+\d+\.xml", fl) for fl in lfiles]
                         lfiles = [it for it in lfiles if it]
@@ -526,7 +532,7 @@ def unzip():
     for clef in clefs:
         dos = glob.glob(f"{clef}*.zip")
         for item in dos:
-            with zipfile.ZipFile(item, 'r') as zip_ref:
+            with zipfile.ZipFile(item, "r") as zip_ref:
                 lfiles = zip_ref.namelist()
                 lfiles = [re.findall(".+\d+\.xml", it) for it in lfiles]
                 lfiles = [it for it in lfiles if it]
@@ -573,9 +579,9 @@ def unzip():
     logger_mongo = get_logger("Mongo")
     # load files into INPI db
     client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
-    print(client.server_info(), flush=True)
+    # print(client.server_info(), flush=True)
 
-    db = client['inpi']
+    db = client["inpi"]
 
     for item in db.list_collection_names():
         db[item].drop()
@@ -586,7 +592,7 @@ def unzip():
     ordre.sort()
     for semaine in ordre:
         print(f"Chargement de la semaine {semaine}.")
-        df_semaine = df_pref_fil.loc[df_pref_fil["prefix"]==semaine].sort_values("dirpath").reset_index()
+        df_semaine = df_pref_fil.loc[df_pref_fil["prefix"] == semaine].sort_values("dirpath").reset_index()
         longueur = len(df_semaine)
         if longueur >= 10:
             prct10 = int(round(longueur * 10 / 100, 0))
@@ -594,13 +600,13 @@ def unzip():
             prct10 = 1
         dic_path2 = {}
         indices = list(df_semaine.index)
-        print(f"La longueur de l\'index de la semaine {semaine} est de {len(indices)}", flush=True)
-        listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
+        print(f"La longueur de l'index de la semaine {semaine} est de {len(indices)}", flush=True)
+        listes_indices = [indices[i : i + prct10] for i in range(0, len(indices), prct10)]
         i = 1
         for liste in listes_indices:
             min_ind = np.min(liste)
             max_ind = np.max(liste) + 1
-            dic_path2["df" + str(i)] = df_semaine.iloc[min_ind: max_ind, :]
+            dic_path2["df" + str(i)] = df_semaine.iloc[min_ind:max_ind, :]
             i = i + 1
         res_futures(dic_path2, mongo_fill)
     print("Fin du chargement de mongo.", flush=True)
