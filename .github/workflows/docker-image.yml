@@ -8,6 +8,8 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: dataesr/harvest-inpi
+  DEPLOYMENT_URL: https://github.com/dataesr/harvest-inpi/pkgs/container/harvest-inpi
+  MM_NOTIFICATION_CHANNEL: bots
 
 jobs:
   build-and-push-ghcr:
@@ -36,3 +38,15 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  notify:
+    needs: build-and-push-ghcr
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: dataesr/mm-notifier-action@v1
+        with:
+          deployment_url: ${{ env.DEPLOYMENT_URL }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          mattermost_channel: ${{ env.MM_NOTIFICATION_CHANNEL}}
+          mattermost_webhook_url: ${{ secrets.MATTERMOST_WEBHOOK_URL }}
