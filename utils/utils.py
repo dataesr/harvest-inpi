@@ -17,3 +17,18 @@ def to_jsonl(input_list, output_file, mode="a"):
             new = clean_json(entry)
             json.dump(new, outfile)
             outfile.write("\n")
+
+
+def chunks(lst, n):
+    """Yield n number of striped chunks from a list."""
+    for i in range(0, n):
+        yield lst[i::n]
+
+
+def print_progress(count, total, steps=15):
+    """Return a progress bar as a string."""
+    completion = count / total
+    done = int(completion * steps)
+    remain = steps - done
+    progress = f"[{'#' * (done)}{'.' * (remain)}] {count}/{total} ({completion:0.1%})"
+    return progress
