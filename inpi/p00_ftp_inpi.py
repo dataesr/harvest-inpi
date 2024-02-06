@@ -129,9 +129,12 @@ def loading():
     os.system(f"mkdir -p {DATA_PATH}/INPI")
     path = os.path.join(DATA_PATH, "INPI/")
     os.chdir(path)
+
+    logger.info("Start loading of INPI database")
+
     # check which directories are already present
     present = os.listdir()
-    logger.debug("Current folders", present)
+    logger.debug(f"Current folders {present}")
 
     # connect to the FTP server
     ftp_server = ftplib.FTP("www.inpi.net", os.getenv("USERNAME_INPI"), os.getenv("PWD_INPI"))
@@ -144,7 +147,7 @@ def loading():
 
     # keep only the yearly forlders
     year_list = list_files(r"^\d{4}$", files)
-    logger.debug("Ftp folders", files)
+    logger.debug(f"Ftp folders {files}")
 
     # select which folders to load by comparing what we already have and what is available on the server
     year_load = []
