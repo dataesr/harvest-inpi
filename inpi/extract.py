@@ -1,39 +1,50 @@
 import os
 import pandas as pd
-
-import pandas as pd
 from bs4 import BeautifulSoup
+from timeit import default_timer as timer
 
 import inpi.p02_lecture_xml as lec
+from utils.utils import print_progress
 
 from application.server.main.logger import get_logger
 
 logger = get_logger(__name__)
 
 DATA_PATH = os.getenv("MOUNTED_VOLUME_TEST")
+XML_PATTERN = "*.xml"
+NEW_PATTERN = "FR_FRNEW"
 
 
-def extract_xml(file_name: str, data_xml: str):
+def extract_xml(file: str, data_xml: str):
+    """Extract xml data from a file.
+
+    Args:
+        file (str): _description_
+        data_xml (str): _description_
+
+    Returns:
+        _type_: _description_
+    """
     os.chdir(DATA_PATH)
 
     list_dir = os.listdir(DATA_PATH)
     list_dir.sort()
 
-    elem_file = file_name.split("/")
+    elem_file = file.split("/")
     if len(data_xml) > 0:
         bs_data = BeautifulSoup(data_xml, "xml")
-        pn = bs_data.find("fr-patent-document")
-        date_produced = lec.date_pub_ref(elem_file, pn)
-        pub_n = lec.doc_nb(elem_file, pn)
+        patent = bs_data.find("fr-patent-document")
+        date_produced = lec.date_pub_ref(elem_file, patent)
+        publication_number = lec.doc_nb(elem_file, patent)
 
-        stats = lec.stat_pub(elem_file, pn)
+        stats = lec.stat_pub(elem_file, patent)
 
-        dic_pn = {
-            "lang": pn["lang"],
-            "application-number-fr": pn["id"],
-            "country": pn["country"],
+        publication = {
+            "lang": patent["lang"],
+            "application-number-fr": patent["id"],
+            "country": patent["country"],
             "date-produced": date_produced,
-            "publication-number": pub_n,
+            "publication-number": publication_number,
             "status": stats,
             "fr-nature": "",
             "fr-extension-territory": "",
@@ -48,96 +59,108 @@ def extract_xml(file_name: str, data_xml: str):
             "fr-bopinum-lapsed": "",
         }
 
-        ex = bs_data.find("fr-extension")
+        extension = bs_data.find("fr-extension")
+        if extension:
+            extension_territory = extension.find("fr-extension-territory")
+            if extension_territory:
+                publication["fr-extension-territory"] = extension_territory.text
 
-        if ex:
-            if ex.find("fr-extension-territory"):
-                dic_pn["fr-extension-territory"] = ex.find("fr-extension-territory").text
+        invention_title = bs_data.find("invention-title")
+        if invention_title:
+            publication["title"] = invention_title.text.lstrip().rstrip()
 
-        tit = bs_data.find("invention-title")
-        abst = bs_data.find("abstract")
-        if tit:
-            dic_pn["title"] = tit.text.lstrip().rstrip()
-        if abst:
-            dic_pn["abstract"] = abst.text.lstrip().rstrip()
+        abstract = bs_data.find("abstract")
+        if abstract:
+            publication["abstract"] = abstract.text.lstrip().rstrip()
 
-        appl = lec.person_ref(bs_data, pub_n, pn)
+        person = lec.person_ref(bs_data, publication_number, patent)
 
-        pref = lec.pub_ref(bs_data, pub_n, pn)
+        publicationRef = lec.pub_ref(bs_data, publication_number, patent)
 
-        aref = lec.app_ref(bs_data, pub_n, pn)
+        application = lec.app_ref(bs_data, publication_number, patent)
 
-        ptlife = bs_data.find("fr-patent-life")
+        patent_life = bs_data.find("fr-patent-life")
 
-        if ptlife:
-            grt = ptlife.find("fr-date-granted")
-
-            if grt:
-                tags_item = [tag.name for tag in grt.find_all()]
+        if patent_life:
+            granted = patent_life.find("fr-date-granted")
+            if granted:
+                tags_item = [tag.name for tag in granted.find_all()]
                 if "kind" in tags_item:
-                    dic_pn["kind-grant"] = grt.find("kind").text
+                    kind = granted.find("kind")
+                    if kind:
+                        publication["kind-grant"] = kind.text
                 if "fr-bopinum" in tags_item:
-                    dic_pn["fr-bopinum-grant"] = grt.find("fr-bopinum").text
+                    bopinum = granted.find("fr-bopinum")
+                    if bopinum:
+                        publication["fr-bopinum-grant"] = bopinum.text
                 if "date" in tags_item:
-                    dae = grt.find("date").text
-                    dic_pn["date-grant"] = lec.check_date(dae)
+                    date = granted.find("date")
+                    if date:
+                        publication["date-grant"] = lec.check_date(date.text)
 
-            ref = ptlife.find("fr-date-application-refused")
+            refused = patent_life.find("fr-date-application-refused")
+            if refused:
+                date = refused.find("date")
+                if date:
+                    publication["date-refusal"] = lec.check_date(date.text)
 
-            if ref:
-                dae = ref.find("date").text
-                dic_pn["date-refusal"] = lec.check_date(dae)
+            withdrawn = patent_life.find("fr-date-application-withdrawn")
+            if withdrawn:
+                date = withdrawn.find("date")
+                if date:
+                    publication["date-withdrawal"] = lec.check_date(date.text)
 
-            wd = ptlife.find("fr-date-application-withdrawn")
+            lapsed = patent_life.find("fr-date-notification-lapsed")
+            if lapsed:
+                date = lapsed.find("date")
+                if date:
+                    publication["date-lapsed"] = lec.check_date(date.text)
+                bopinum = lapsed.find("fr-bopinum")
+                if bopinum:
+                    publication["fr-bopinum-lapsed"] = bopinum.text
 
-            if wd:
-                dae = wd.find("date").text
-                dic_pn["date-withdrawal"] = lec.check_date(dae)
+            status = patent_life.find("fr-status")
+            if status:
+                nature = status.find("fr-nature")
+                if nature:
+                    publication["fr-nature"] = nature.text
 
-            lp = ptlife.find("fr-date-notification-lapsed")
-
-            if lp:
-                dae = lp.find("date").text
-                dic_pn["date-lapsed"] = lec.check_date(dae)
-                dic_pn["fr-bopinum-lapsed"] = lp.find("fr-bopinum").text
-
-            stt = ptlife.find("fr-status")
-
-            if stt:
-                dic_pn["fr-nature"] = stt.find("fr-nature").text
-
-            rnw = lec.renewal_list(ptlife, pub_n, pn)
+            renewal = lec.renewal_list(patent_life, publication_number, patent)
 
             dic_errata = {
-                "publication-number": pub_n,
+                "publication-number": publication_number,
                 "part": "",
                 "text": "",
                 "date-errata": "",
                 "fr-bopinum": "",
-                "application-number": pn["id"],
+                "application-number": patent["id"],
             }
 
-            erra = lec.errata_list(ptlife, dic_errata)
+            errata = lec.errata_list(patent_life, dic_errata)
 
-            dic_ins = {
-                "publication-number": pub_n,
+            dic_inscription = {
+                "publication-number": publication_number,
                 "registered-number": "",
                 "date-inscription": "",
                 "code-inscription": "",
                 "nature-inscription": "",
                 "fr-bopinum": "",
-                "application-number": pn["id"],
+                "application-number": patent["id"],
             }
 
-            ins = lec.inscr_list(ptlife, dic_ins)
+            inscription = lec.inscr_list(patent_life, dic_inscription)
 
-            sear = lec.search_list(ptlife, pub_n, pn)
+            search = lec.search_list(patent_life, publication_number, patent)
 
-            dic_amended = {"publication-number": pub_n, "claim": "", "application-number": pn["id"]}
+            dic_amendedClaim = {
+                "publication-number": publication_number,
+                "claim": "",
+                "application-number": patent["id"],
+            }
 
-            amend = lec.amended_list(ptlife, dic_amended)
+            amendedClaim = lec.amended_list(patent_life, dic_amendedClaim)
 
-            dic_citations = {
+            dic_citation = {
                 "type-citation": "",
                 "citation": "",
                 "country": "",
@@ -146,70 +169,70 @@ def extract_xml(file_name: str, data_xml: str):
                 "passage": "",
                 "category": "",
                 "claim": "",
-                "application-number-fr": pn["id"],
-                "publication-number": pub_n,
+                "application-number-fr": patent["id"],
+                "publication-number": publication_number,
             }
 
-            cit = lec.cit_list(ptlife, dic_citations)
+            citation = lec.cit_list(patent_life, dic_citation)
 
         else:
-            rnw = pd.DataFrame(
+            renewal = pd.DataFrame(
                 data=[
                     {
-                        "publication-number": pub_n,
+                        "publication-number": publication_number,
                         "type-payment": "",
                         "percentile": "",
                         "date-payment": "",
                         "amount": "",
-                        "application-number-fr": pn["id"],
+                        "application-number-fr": patent["id"],
                     }
                 ]
             )
 
-            erra = pd.DataFrame(
+            errata = pd.DataFrame(
                 data=[
                     {
-                        "publication-number": pub_n,
+                        "publication-number": publication_number,
                         "part": "",
                         "text": "",
                         "date-errata": "",
                         "fr-bopinum": "",
-                        "application-number": pn["id"],
+                        "application-number": patent["id"],
                     }
                 ]
             ).drop_duplicates()
 
-            ins = pd.DataFrame(
+            inscription = pd.DataFrame(
                 data=[
                     {
-                        "publication-number": pub_n,
+                        "publication-number": publication_number,
                         "registered-number": "",
                         "date-inscription": "",
                         "code-inscription": "",
                         "nature-inscription": "",
                         "fr-bopinum": "",
-                        "application-number": pn["id"],
+                        "application-number": patent["id"],
                     }
                 ]
             ).drop_duplicates()
 
-            sear = pd.DataFrame(
+            search = pd.DataFrame(
                 data=[
                     {
-                        "publication-number": pub_n,
+                        "publication-number": publication_number,
                         "type-search": "",
                         "date-search": "",
                         "fr-bopinum": "",
-                        "application-number-fr": pn["id"],
+                        "application-number-fr": patent["id"],
                     }
                 ]
             ).drop_duplicates()
 
-            amend = pd.DataFrame(
-                data=[{"publication-number": pub_n, "claim": "", "application-number": pn["id"]}]
+            amendedClaim = pd.DataFrame(
+                data=[{"publication-number": publication_number, "claim": "", "application-number": patent["id"]}]
             ).drop_duplicates()
 
-            cit = pd.DataFrame(
+            citation = pd.DataFrame(
                 data=[
                     {
                         "type-citation": "",
@@ -220,40 +243,65 @@ def extract_xml(file_name: str, data_xml: str):
                         "passage": "",
                         "category": "",
                         "claim": "",
-                        "application-number-fr": pn["id"],
-                        "publication-number": pub_n,
+                        "application-number-fr": patent["id"],
+                        "publication-number": publication_number,
                     }
                 ]
             ).drop_duplicates()
 
-        dic_pn = pd.DataFrame(data=[dic_pn]).drop_duplicates()
+        publication = pd.DataFrame(data=[publication]).drop_duplicates()
 
-        prio = lec.prio_list(bs_data, pub_n, pn)
+        priority = lec.prio_list(bs_data, publication_number, patent)
 
-        redoc = lec.redoc_list(bs_data, pub_n, pn)
+        relatedDocument = lec.redoc_list(bs_data, publication_number, patent)
 
-        oldipc = lec.oldipc_list(bs_data, pub_n, pn)
+        oldIpc = lec.oldipc_list(bs_data, publication_number, patent)
 
-        ipcs = lec.ipc_list(bs_data, pub_n, pn)
+        ipc = lec.ipc_list(bs_data, publication_number, patent)
 
-        cpcs = lec.cpc_list(bs_data, pub_n, pn)
+        cpc = lec.cpc_list(bs_data, publication_number, patent)
 
     else:
         collections = {}
-        logger.warn(f"Xml empty for file {file_name}")
+        logger.warn(f"Xml empty for file {file}")
         return collections
 
-    collections = {"dic_pn": dic_pn.to_dict("record"), "pref": pref.to_dict("record")}
-    logger.debug(f"{pub_n} collection:")
-    logger.debug(f"{collections}")
+    collections = {
+        "amendedClaim": amendedClaim.to_dict("record"),
+        "application": application.to_dict("record"),
+        "citation": citation.to_dict("record"),
+        "cpc": cpc.to_dict("record"),
+        "errata": errata.to_dict("record"),
+        "inscription": inscription.to_dict("record"),
+        "ipc": ipc.to_dict("record"),
+        "oldIpc": oldIpc.to_dict("record"),
+        "person": person.to_dict("record"),
+        "priority": priority.to_dict("record"),
+        "publication": publication.to_dict("record"),
+        "publicationRef": publicationRef.to_dict("record"),
+        "relatedDocument": relatedDocument.to_dict("record"),
+        "renewal": renewal.to_dict("record"),
+        "search": search.to_dict("record"),
+    }
+
+    # logger.debug(f"{publication_number} collection:")
+    # logger.debug(f"{collections}")
 
     return collections
 
 
 def extract_file(file):
+    """Read a file and extract xml data.
+
+    Args:
+        file (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     collections = {}
 
-    logger.debug(f"Extract file {file}")
+    # logger.debug(f"Extract file {file}")
     with open(file, "r") as f:
         xml = f.read()
 
@@ -262,16 +310,33 @@ def extract_file(file):
     return collections
 
 
-def extract(files):
-    CHUNK_SIZE = 5
-    chunk_collections = []
-    chunk = files
+def extract(files, show_progress=False):
+    """Extract data from a list of files.
 
-    if len(files) > CHUNK_SIZE:
-        chunk = files[:CHUNK_SIZE]
+    Args:
+        files (_type_): _description_
+        show_progress (bool, optional): _description_. Defaults to False.
 
-    logger.debug(f"Start extract of {len(chunk)} files")
-    for file in chunk:
-        chunk_collections.append(extract_file(file))
+    Returns:
+        _type_: _description_
+    """
+    collections = []
+    extract_timer = timer()
+    count_timer = timer()
 
-    return chunk_collections
+    files_total = len(files)
+    logger.info(f"Start extract of {files_total} files")
+
+    for count, file in enumerate(files):
+        if show_progress and (timer() - count_timer) > 60:
+            count_timer = timer()
+            logger.info(print_progress(count, files_total))
+
+        collections.append(extract_file(file))
+
+    if show_progress:
+        logger.info(print_progress(files_total, files_total))
+
+    logger.info(f"Extract done in {(timer() - extract_timer):.2f}")
+
+    return collections
