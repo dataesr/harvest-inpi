@@ -16,6 +16,7 @@ import sys
 import concurrent.futures
 
 from inpi import p02_lecture_xml as p02
+from inpi.files import LOAD_CSV_PATH
 from pymongo import MongoClient
 
 # directory where the files are
@@ -65,7 +66,7 @@ def subset_df(df: pd.DataFrame) -> dict:
     The subsets are put into a dictionary with 10-11 pairs key-value.
     Each key is the df subset name and each value is the df subset.
     """
-    prct10 = int(round(len(df) * 10 / 100, 0))
+    prct10 = max(int(round(len(df) * 10 / 100, 0)), 1)
     dict_nb = {}
     indices = list(df.index)
     listes_indices = [indices[i : i + prct10] for i in range(0, len(indices), prct10)]
@@ -572,42 +573,44 @@ def unzip():
     df_pref_fil = df_pref_fil.sort_values("dirpath")
 
     dic_path = subset_df(df_pref_fil)
-
     res_futures(dic_path, req_xml_aws)
 
-    # #####################################################################################################
-    logger_mongo = get_logger("Mongo")
-    # load files into INPI db
-    client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
-    # print(client.server_info(), flush=True)
+    # # #####################################################################################################
+    df_pref_fil["dirpath"].to_csv(f"{LOAD_CSV_PATH}")
 
-    db = client["inpi"]
+    # # #####################################################################################################
+    # logger_mongo = get_logger("Mongo")
+    # # load files into INPI db
+    # client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
+    # # print(client.server_info(), flush=True)
 
-    for item in db.list_collection_names():
-        db[item].drop()
+    # db = client["inpi"]
 
-    print("Début du chargement de mongo.", flush=True)
-    logger_mongo.info("Start loading mongo")
-    ordre = list(set(df_pref_fil["prefix"]))
-    ordre.sort()
-    for semaine in ordre:
-        print(f"Chargement de la semaine {semaine}.")
-        df_semaine = df_pref_fil.loc[df_pref_fil["prefix"] == semaine].sort_values("dirpath").reset_index()
-        longueur = len(df_semaine)
-        if longueur >= 10:
-            prct10 = int(round(longueur * 10 / 100, 0))
-        else:
-            prct10 = 1
-        dic_path2 = {}
-        indices = list(df_semaine.index)
-        print(f"La longueur de l'index de la semaine {semaine} est de {len(indices)}", flush=True)
-        listes_indices = [indices[i : i + prct10] for i in range(0, len(indices), prct10)]
-        i = 1
-        for liste in listes_indices:
-            min_ind = np.min(liste)
-            max_ind = np.max(liste) + 1
-            dic_path2["df" + str(i)] = df_semaine.iloc[min_ind:max_ind, :]
-            i = i + 1
-        res_futures(dic_path2, mongo_fill)
-    print("Fin du chargement de mongo.", flush=True)
-    logger_mongo.info("End loading mongo")
+    # for item in db.list_collection_names():
+    #     db[item].drop()
+
+    # print("Début du chargement de mongo.", flush=True)
+    # logger_mongo.info("Start loading mongo")
+    # ordre = list(set(df_pref_fil["prefix"]))
+    # ordre.sort()
+    # for semaine in ordre:
+    #     print(f"Chargement de la semaine {semaine}.")
+    #     df_semaine = df_pref_fil.loc[df_pref_fil["prefix"] == semaine].sort_values("dirpath").reset_index()
+    #     longueur = len(df_semaine)
+    #     if longueur >= 10:
+    #         prct10 = int(round(longueur * 10 / 100, 0))
+    #     else:
+    #         prct10 = 1
+    #     dic_path2 = {}
+    #     indices = list(df_semaine.index)
+    #     print(f"La longueur de l'index de la semaine {semaine} est de {len(indices)}", flush=True)
+    #     listes_indices = [indices[i : i + prct10] for i in range(0, len(indices), prct10)]
+    #     i = 1
+    #     for liste in listes_indices:
+    #         min_ind = np.min(liste)
+    #         max_ind = np.max(liste) + 1
+    #         dic_path2["df" + str(i)] = df_semaine.iloc[min_ind:max_ind, :]
+    #         i = i + 1
+    #     res_futures(dic_path2, mongo_fill)
+    # print("Fin du chargement de mongo.", flush=True)
+    # logger_mongo.info("End loading mongo")
