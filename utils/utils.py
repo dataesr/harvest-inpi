@@ -1,6 +1,13 @@
 import json
 
 
+def remove_prefix(text: str, prefix: str) -> str:
+    """Remove prefix from a string."""
+    if text.startswith(prefix):
+        return text[len(prefix) :]
+    return text
+
+
 def clean_json(elt):
     keys = list(elt.keys()).copy()
     for f in keys:
@@ -19,13 +26,13 @@ def to_jsonl(input_list, output_file, mode="a"):
             outfile.write("\n")
 
 
-def chunks(lst, n):
+def chunks(lst: list, n: int) -> list:
     """Yield n number of striped chunks from a list."""
     for i in range(0, n):
         yield lst[i::n]
 
 
-def print_progress(count, total, steps=15):
+def print_progress(count, total, steps=15) -> str:
     """Return a progress bar as a string."""
     completion = count / total
     done = int(completion * steps)

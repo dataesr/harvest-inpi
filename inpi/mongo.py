@@ -14,6 +14,39 @@ INPI_PATH = os.path.join(DATA_PATH, "INPI")
 INPI_DB = "inpi"
 INPI_INDEX = "publication-number"
 
+COLLECTIONS_CONFIG = {
+    "amendedClaim": {},
+    "application": {},
+    "citation": {},
+    "cpc": {},
+    "errata": {},
+    "inscription": {},
+    "ipc": {},
+    "oldIpc": {},
+    "person": {"with_history": True},
+    "priority": {},
+    "publication": {"unique": True},
+    "publicationRef": {},
+    "relatedDocument": {},
+    "renewal": {},
+    "search": {},
+}
+
+
+def mongo_collections_find_field(field, include=True):
+    """Find collections where field is true."""
+    collections_with_field = [
+        collection_name
+        for collection_name, collection_config in COLLECTIONS_CONFIG.items()
+        if collection_config.get(field)
+    ]
+
+    if not include:
+        collections_without_field = list(set(COLLECTIONS_CONFIG.keys()) - set(collections_with_field))
+        return collections_without_field
+
+    return collections_with_field
+
 
 def mongo_delete_collections(collections_names=[]):
     """Delete collections from mongo db.
@@ -63,25 +96,34 @@ def mongo_delete(collection_data, collection_name):
 
 
 def mongo_create_index(collection_name, index_name):
-    """Create index on a mongo collection.
+    """Create index on a mongo collection if unique.
 
     Args:
         collection_name (_type_): _description_
         index_name (_type_): _description_
     """
+
+    if not COLLECTIONS_CONFIG[collection_name].get("unique"):
+        # logger.warn("Collection {} not defined as unique: index not created");
+        return
+
     create_index_timer = timer()
     mongo_client = MongoClient(os.getenv("MONGO_URI"))
     mongo_inpi = mongo_client[INPI_DB]
     collection = mongo_inpi[collection_name]
 
-    logger.info(f"Collection {collection_name} start indexing by '{index_name}'")
-    collection.create_index(index_name, unique=True)
+    # logger.info(f"Collection {collection_name} start indexing by '{index_name}'")
+    try:
+        collection.create_index(index_name, unique=True)
+    except Exception as error:
+        logger.error(f"Error while creating an unique index:\n{error}")
+
     mongo_client.close()
 
     logger.info(f"Collection {collection_name} indexed in {(timer() - create_index_timer):.2f}")
 
 
-@retry(delay=200, tries=3)
+@retry(delay=50, tries=3)
 def mongo_import_collection(collection_name, collection_data):
     """Import collection data into mongo db.
 
@@ -115,7 +157,7 @@ def mongo_import_collection(collection_name, collection_data):
     os.remove(output_json)
 
 
-def mongo_import(data):
+def mongo_import(data, collections_names):
     """Import data into mongo db.
 
     Args:
@@ -126,19 +168,27 @@ def mongo_import(data):
         logger.warn("Import data is empty!")
         return
 
-    COLLECTIONS_NAMES = data[0].keys()
     collections_timer = timer()
-    logger.info(f"Start mongo import of {COLLECTIONS_NAMES}")
+    logger.info(f"Start mongo import of {collections_names}")
 
     # Get collection records from data
-    for collection_name in COLLECTIONS_NAMES:
+    for collection_name in collections_names:
         logger.debug(f"Collection {collection_name} start loading")
         collection_data = []
+
+        # Get records
         for record in data:
-            if collection_name in record:
-                collection_data += record[collection_name]
+            collection_record = record.get(collection_name)
+            if collection_record:
+                if isinstance(collection_record, list):
+                    collection_data.extend(collection_record)
+                else:
+                    collection_data.append(collection_record)
 
         # Import collection
         mongo_import_collection(collection_name, collection_data)
+
+        # Create index
+        mongo_create_index(collection_name, INPI_INDEX)
 
     logger.info(f"Collections imported in {(timer() - collections_timer):.2f}")
