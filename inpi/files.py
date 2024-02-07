@@ -4,7 +4,7 @@ import glob
 from pathlib import Path
 from collections import defaultdict
 
-from utils.utils import chunks
+from utils.utils import chunks, remove_prefix
 
 from application.server.main.logger import get_logger
 
@@ -12,13 +12,13 @@ logger = get_logger(__name__)
 
 DATA_PATH = os.getenv("MOUNTED_VOLUME_TEST")
 INPI_PATH = os.path.join(DATA_PATH, "INPI")
-LOAD_CSV_PATH = os.path.join(INPI_PATH, "to_load.csv")
+LOAD_CSV_PATH = os.path.join(DATA_PATH, "to_load.csv")
 XML_PATTERN = "*.xml"
 NEW_PATTERN = "FR_FRNEW"
 
 
-def files_remove_disk():
-    """Remove files list on disk."""
+def files_remove_csv():
+    """Remove csv on disk."""
     os.remove(LOAD_CSV_PATH)
 
 
@@ -70,7 +70,7 @@ def files_remove_duplicates(files):
     # Create dictionnary of occurences from files
     tally = defaultdict(list)
     for index, file in enumerate(files):
-        file_name = Path(file).stem
+        file_name = remove_prefix(Path(file).stem, "FR")
         tally[file_name].append(index)
 
     # Keep last occurence of file
@@ -84,7 +84,7 @@ def files_remove_duplicates(files):
     return files_last
 
 
-def files_import_from_years(path, years=[]):
+def files_import_from_years(path, years=None):
     """Get all xml files from path.
 
     Args:
@@ -118,8 +118,8 @@ def files_import_from_years(path, years=[]):
     return files
 
 
-def files_import_from_disk():
-    """Import files list from disk."""
+def files_import_from_csv():
+    """Import files list from csv."""
     files = []
 
     # Check file exist
@@ -130,14 +130,16 @@ def files_import_from_disk():
     # Read file
     with open(LOAD_CSV_PATH) as f:
         reader = csv.reader(f)
-        files = list(reader)
+        files = [
+            line[0] if line[0].startswith(INPI_PATH) else os.path.join(INPI_PATH, line[0]) for line in reader
+        ]  # Only one column
 
-    logger.debug(f"[DISK] Found {len(files)} xml files")
+    logger.debug(f"[CSV] Found {len(files)} xml files")
 
     return files
 
 
-def files_import(remove_duplicates=True, force=False, force_years=[]):
+def files_import(remove_duplicates=True, force=False, force_years=None):
     """Import files from list on disk and from years if forced
 
     Args:
@@ -149,18 +151,13 @@ def files_import(remove_duplicates=True, force=False, force_years=[]):
         _type_: _description_
     """
 
-    # Import from disk
-    files = files_import_from_disk()
-
-    # Import from years
     if force:
-        files += files_import_from_years(INPI_PATH, force_years)
+        files += files_import_from_years(INPI_PATH, force_years)  # Import from years
+    else:
+        files = files_import_from_csv()  # Import from csv
 
     if not files:
-        logger.debug(f"[ALL] No xml files found")
         return files
-
-    logger.debug(f"[ALL] Found {len(files)} xml files")
 
     # Sort files
     files = files_sort(files)
