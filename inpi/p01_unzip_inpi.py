@@ -576,7 +576,8 @@ def unzip():
     res_futures(dic_path, req_xml_aws)
 
     # # #####################################################################################################
-    df_pref_fil["dirpath"].to_csv(f"{LOAD_CSV_PATH}")
+    if len(df_pref_fil) > 0:
+        df_pref_fil["fullpath"].to_csv(f"{LOAD_CSV_PATH}", index=False, header=False)
 
     # # #####################################################################################################
     # logger_mongo = get_logger("Mongo")
