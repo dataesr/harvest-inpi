@@ -1,6 +1,6 @@
 # HARVEST-INPI
 
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/dataesr/harvest-inpi?display_name=tag)
+[![Docker Image CI](https://github.com/dataesr/harvest-inpi/actions/workflows/docker-image.yml/badge.svg)](https://github.com/dataesr/harvest-inpi/actions/workflows/docker-image.yml)
 
 ## Release
 
