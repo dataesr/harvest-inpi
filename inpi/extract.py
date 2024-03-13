@@ -15,7 +15,7 @@ XML_PATTERN = "*.xml"
 NEW_PATTERN = "FR_FRNEW"
 
 
-def extract_xml(file: str, data_xml: str, extract_collections: list[str]) -> dict:
+def extract_xml(file: str, data_xml: str, extract_collections: list) -> dict:
     """Extract xml data from a file.
 
     Args:
@@ -242,7 +242,7 @@ def extract_xml(file: str, data_xml: str, extract_collections: list[str]) -> dic
     return collections
 
 
-def extract_file(file:str, extract_collections:list[str]):
+def extract_file(file:str, extract_collections:list) -> dict:
     """Read a file and extract xml data.
 
     Args:
@@ -263,7 +263,7 @@ def extract_file(file:str, extract_collections:list[str]):
     return collections
 
 
-def extract(files:list[str], extract_collections:list[str], show_progress=False):
+def extract(files:list, extract_collections:list, show_progress=False) -> list:
     """Extract data from a list of files.
 
     Args:

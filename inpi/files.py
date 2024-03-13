@@ -22,7 +22,7 @@ def files_remove_csv():
     os.remove(LOAD_CSV_PATH)
 
 
-def files_get_chunks(files:list[str], max_size:int) -> list[list[str]]:
+def files_get_chunks(files:list, max_size:int) -> list:
     """ Get chunks from list of files.
 
     Args:
@@ -46,7 +46,7 @@ def files_get_chunks(files:list[str], max_size:int) -> list[list[str]]:
     return chunks_list
 
 
-def files_sort(files:list[str]) -> list[str]:
+def files_sort(files:list) -> list:
     """ Sort files by name with NEW before AMD.
 
     Args:
@@ -64,7 +64,7 @@ def files_sort(files:list[str]) -> list[str]:
     return files
 
 
-def files_remove_duplicates(files:list[str]) -> list[str]:
+def files_remove_duplicates(files:list) -> list:
     """ Remove duplicates from files and keep must recent ones.
 
     Args:
@@ -90,7 +90,7 @@ def files_remove_duplicates(files:list[str]) -> list[str]:
     return files_last
 
 
-def files_import_from_years(path:str, years=None) -> list[str]:
+def files_import_from_years(path:str, years=None) -> list:
     """ Get all xml files from path.
 
     Args:
@@ -109,7 +109,7 @@ def files_import_from_years(path:str, years=None) -> list[str]:
         for file in glob.glob(path, recursive=True):
             files.append(file)
         
-        logger.debug(f"[DISK] Found {len(year_files)} xml files")
+        logger.debug(f"[DISK] Found {len(files)} xml files")
         
 
     # Get specific years files
@@ -127,7 +127,7 @@ def files_import_from_years(path:str, years=None) -> list[str]:
     return files
 
 
-def files_import_from_csv() -> list[str]:
+def files_import_from_csv() -> list:
     """ Import files list from csv.
     
     Returns:
@@ -152,7 +152,7 @@ def files_import_from_csv() -> list[str]:
     return files
 
 
-def files_import(remove_duplicates=True, force=False, force_years=None) -> list[str]:
+def files_import(remove_duplicates=True, force=False, force_years=None) -> list:
     """ Import files from csv and from disk if forced.
 
     Args:

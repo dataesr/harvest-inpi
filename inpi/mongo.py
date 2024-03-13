@@ -79,8 +79,8 @@ def mongo_delete_collections(collections_names=None):
     logger.debug(f"Mongo collections dropped in {(timer() - delete_timer):.2f}")
 
 
-def mongo_delete(collection_data:list[dict], collection_name:str):
-    """ Delete data from a mongo collection.
+def mongo_delete_records(collection_data:list, collection_name:str):
+    """ Delete records from a mongo collection.
 
     Args:
         collection_data: List of records.
@@ -147,7 +147,8 @@ def mongo_import_collection(collection_name:str, collection_data:list):
     # logger.debug(f"{collection}")
 
     # Delete from mongo
-    mongo_delete(collection_data, collection_name)
+    if collection_name not in mongo_collections_find_field("with_history"):
+        mongo_delete_records(collection_data, collection_name)
 
     # Save data as json
     output_json = os.path.join(INPI_PATH, f"{collection_name}.jsonl")
@@ -165,7 +166,7 @@ def mongo_import_collection(collection_name:str, collection_data:list):
     os.remove(output_json)
 
 
-def mongo_import(data:list[dict], collections_names:list[str]):
+def mongo_import(data:list, collections_names:list):
     """Import data into mongo db.
 
     Args:
