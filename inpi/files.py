@@ -152,7 +152,7 @@ def files_import(remove_duplicates=True, force=False, force_years=None):
     """
 
     if force:
-        files += files_import_from_years(INPI_PATH, force_years)  # Import from years
+        files = files_import_from_years(INPI_PATH, force_years)  # Import from years
     else:
         files = files_import_from_csv()  # Import from csv
 
