@@ -2,8 +2,13 @@ import os
 from timeit import default_timer as timer
 
 from inpi.extract import extract
-from inpi.files import files_import, files_get_chunks, files_remove_csv
-from inpi.mongo import mongo_delete_collections, mongo_import, mongo_collections_find_field
+from inpi.files import files_import, files_get_chunks
+from inpi.mongo import (
+    mongo_delete_collections,
+    mongo_import,
+    mongo_find_collections_from_field,
+    mongo_delete_duplicates,
+)
 
 from application.server.main.logger import get_logger
 
@@ -40,7 +45,7 @@ def mongo_load(with_history=False, force=False, force_years=None, reset_mongo=Fa
         return
 
     # Get collections to extract
-    extract_collections = mongo_collections_find_field("with_history", include=with_history)
+    extract_collections = mongo_find_collections_from_field("with_history", include=with_history)
     logger.debug(f"Collections to extract {extract_collections} (with_history={with_history})")
 
     # Reset mongo
@@ -61,8 +66,9 @@ def mongo_load(with_history=False, force=False, force_years=None, reset_mongo=Fa
 
         logger.debug(f"Chunk loaded in {(timer() - chunk_timer):.2f}")
 
-    # Delete csv from disk
-    # files_remove_csv()
+    # Delete duplicates for collections with history
+    if with_history:
+        mongo_delete_duplicates(extract_collections)
 
     logger.info(f"Mongo loaded in {(timer() - load_timer):.2f}")
     return

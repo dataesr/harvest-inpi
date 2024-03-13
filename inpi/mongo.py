@@ -33,7 +33,7 @@ COLLECTIONS_CONFIG = {
 }
 
 
-def mongo_collections_find_field(field:str, include=True):
+def mongo_find_collections_from_field(field: str, include=True):
     """Find collections where field is true.
 
     Args:
@@ -54,6 +54,101 @@ def mongo_collections_find_field(field:str, include=True):
         return collections_without_field
 
     return collections_with_field
+
+
+def mongo_collection_find_duplicates(collection_name: str):
+    """Find exact duplicates from a collection.
+
+    Args:
+        collection_name: Collection name.
+
+    Returns:
+        Duplicates ids (without last occurence).
+    """
+    find_timer = timer()
+
+    mongo_client = MongoClient(os.getenv("MONGO_URI"))
+    mongo_inpi = mongo_client[INPI_DB]
+    collection = mongo_inpi[collection_name]
+
+    logger.debug(f"Start looking for exact duplicates in collection {collection_name}")
+
+    # Get fields from single entry
+    fields = {}
+    for key in collection.find_one({}).keys():
+        if key != "_id":
+            fields[key] = f"${key}"
+
+    # Aggregate pipeline
+    pipeline = [
+        {"$group": {"_id": fields, "dups": {"$addToSet": "$_id"}, "count": {"$sum": 1}}},
+        {"$match": {"count": {"$gt": 1}}},
+    ]
+    cursor = collection.aggregate(pipeline, allowDiskUse=True)
+
+    duplicates = []
+    for doc in cursor:
+        dups = doc["dups"]
+        if len(dups) > 1:
+            for dup in dups[:-1]:  # Keep last occurence
+                duplicates.append(dup)
+
+    mongo_client.close()
+
+    logger.debug(f"Found {len(duplicates)} duplicates in {(timer() - find_timer):.2f}")
+
+    return duplicates
+
+
+def mongo_collection_delete_duplicates(collection_name: str):
+    """Delete duplicates from a collection.
+
+    Args:
+        collection_name (str): Collection name.
+    """
+
+    duplicates = mongo_collection_find_duplicates(collection_name)
+
+    if not duplicates:
+        logger.warn(f"No duplicates found for collection {collection_name}")
+        return
+
+    delete_timer = timer()
+
+    mongo_client = MongoClient(os.getenv("MONGO_URI"))
+    mongo_inpi = mongo_client[INPI_DB]
+    collection = mongo_inpi[collection_name]
+
+    logger.debug(f"Start delete {len(duplicates)} duplicates from collection {collection_name}")
+
+    try:
+        collection.delete_many({"_id": {"$in": duplicates}})
+    except Exception as error:
+        logger.error(f"Error with collection.delete_many:\n{error}")
+
+    mongo_client.close()
+
+    logger.debug(f"Collection duplicates dropped in {(timer() - delete_timer):.2f}")
+
+
+def mongo_delete_duplicates(collections_names=None):
+    """Delete duplicates from specified collections.
+
+    Args:
+        collections_names: List of collections. Defaults to None.
+    """
+    delete_timer = timer()
+
+    if not collections_names:
+        logger.warn(f"No collections specified, skip delete duplicates")
+        return
+
+    logger.debug(f"Start delete mongo duplicates from collections {collections_names}")
+
+    for collection_name in collections_names:
+        mongo_collection_delete_duplicates(collection_name)
+
+    logger.debug(f"Collections duplicates dropped in {(timer() - delete_timer):.2f}")
 
 
 def mongo_delete_collections(collections_names=None):
@@ -147,7 +242,7 @@ def mongo_import_collection(collection_name:str, collection_data:list):
     # logger.debug(f"{collection}")
 
     # Delete from mongo
-    if collection_name not in mongo_collections_find_field("with_history"):
+    if collection_name not in mongo_find_collections_from_field("with_history"):
         mongo_delete_records(collection_data, collection_name)
 
     # Save data as json

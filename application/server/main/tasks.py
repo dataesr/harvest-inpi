@@ -4,6 +4,7 @@ from application.server.main.logger import get_logger
 from inpi import p00_ftp_inpi, p01_unzip_inpi
 from inpi.load import mongo_load
 from inpi.files import files_remove_csv
+from inpi.mongo import mongo_delete_duplicates
 
 logger = get_logger(__name__)
 
@@ -85,3 +86,8 @@ def task_harvest_inpi(args):
 
     # Extract and load mongo
     mongo_load()
+
+
+def task_mongo_delete_duplicates(args):
+    # Remove exact duplicates from mongo collections
+    mongo_delete_duplicates(collections_names=args.get("collections_names"))

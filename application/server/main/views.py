@@ -214,6 +214,19 @@ def run_task_mongo_reload_force_with_history():
     return jsonify(response_object), 202
 
 
+@main_blueprint.route("/mongo_delete_duplicates", methods=["POST"])
+def run_task_mongo_delete_duplicates():
+    """
+    Remove exact duplicates from mongo collections.
+    """
+    args = request.get_json(force=True)
+    with Connection(redis.from_url(current_app.config["REDIS_URL"])):
+        q = Queue(name="inpi", default_timeout=default_timeout)
+        task = q.enqueue(tasks.task_mongo_delete_duplicates, args)
+    response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+    return jsonify(response_object), 202
+
+
 @main_blueprint.route("/clean", methods=["POST"])
 def run_task_disk_clean():
     """
