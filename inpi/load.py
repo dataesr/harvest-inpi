@@ -53,7 +53,7 @@ def mongo_load(with_history=False, force=False, force_years=None, reset_mongo=Fa
         chunk_timer = timer()
 
         # Extract data
-        logger.info(f"Start extract of chunk {chunk_i}/{len(chunks)} ({len(chunk_to_add)} files)")
+        logger.info(f"Start extract of chunk {chunk_i + 1}/{len(chunks)} ({len(chunk_to_add)} files)")
         data_to_add = extract(chunk_to_add, extract_collections, show_progress=True)
 
         # Load mongo db

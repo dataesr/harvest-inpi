@@ -120,16 +120,16 @@ def res_futures(dict_nb: dict, query):
                 print("%r generated an exception: %s" % (req, exc), flush=True)
 
 
-def mongo_fill(df: pd.DataFrame):
-    # logger = get_logger(threading.current_thread().name)
-    # logger.info("start loading mongo")
-    for _, r in df.iterrows():
-        fil = r.dirpath
-        # print(f"Le fichier chargé est {fil}", flush=True)
-        with open(fil, "r") as f:
-            data = f.read()
-        p02.update_db(fil, data)
-    # logger.info("end loading mongo")
+# def mongo_fill(df: pd.DataFrame):
+#     # logger = get_logger(threading.current_thread().name)
+#     # logger.info("start loading mongo")
+#     for _, r in df.iterrows():
+#         fil = r.dirpath
+#         # print(f"Le fichier chargé est {fil}", flush=True)
+#         with open(fil, "r") as f:
+#             data = f.read()
+#         p02.update_db(fil, data)
+#     # logger.info("end loading mongo")
 
 
 def unzip():
@@ -578,9 +578,7 @@ def unzip():
     # # #####################################################################################################
     if len(df_pref_fil) > 0:
         df_pref_fil["fullpath"].to_csv(f"{LOAD_CSV_PATH}", index=False, header=False)
-    else:
-        if os.path.exists(LOAD_CSV_PATH):
-            os.remove(LOAD_CSV_PATH)
+
     # # #####################################################################################################
     # logger_mongo = get_logger("Mongo")
     # # load files into INPI db

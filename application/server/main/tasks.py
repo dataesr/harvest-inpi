@@ -3,6 +3,7 @@ import os
 from application.server.main.logger import get_logger
 from inpi import p00_ftp_inpi, p01_unzip_inpi
 from inpi.load import mongo_load
+from inpi.files import files_remove_csv
 
 logger = get_logger(__name__)
 
@@ -11,6 +12,10 @@ DATA_PATH = os.getenv("MOUNTED_VOLUME_TEST")
 
 def task_disk_clean(args):
     os.system(f"rm -rf {DATA_PATH}")
+
+
+def task_remove_csv(args):
+    files_remove_csv()
 
 
 def task_download_inpi(args):

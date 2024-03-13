@@ -37,27 +37,30 @@ def run_task_harvest_inpi_split():
     Harvest of the INPI database with split jobs.
     """
     args = request.get_json(force=True)
-    download_task = []
 
     # Download and unzip inpi db
     with Connection(redis.from_url(current_app.config["REDIS_URL"])):
         q = Queue(name="inpi", default_timeout=default_timeout)
-        task = q.enqueue(tasks.task_download_and_unzip_inpi, args)
-        download_task.append(task)
-    response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+        download_task = q.enqueue(tasks.task_download_and_unzip_inpi, args)
+    response_object = {"status": "success", "data": {"task_id": download_task.get_id()}}
 
     # Load mongo without history
     with Connection(redis.from_url(current_app.config["REDIS_URL"])):
         q = Queue(name="inpi", default_timeout=default_timeout)
-        task = q.enqueue(tasks.task_mongo_load, args, depends_on=download_task)
-        download_task.append(task)
-    response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+        no_history_task = q.enqueue(tasks.task_mongo_load, args, depends_on=[download_task])
+    response_object = {"status": "success", "data": {"task_id": no_history_task.get_id()}}
 
     # Load mongo with history
     with Connection(redis.from_url(current_app.config["REDIS_URL"])):
         q = Queue(name="inpi", default_timeout=default_timeout)
-        task = q.enqueue(tasks.task_mongo_load_with_history, args, depends_on=download_task)
-    response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+        history_task = q.enqueue(tasks.task_mongo_load_with_history, args, depends_on=[download_task])
+    response_object = {"status": "success", "data": {"task_id": history_task.get_id()}}
+
+    # Delete load file
+    with Connection(redis.from_url(current_app.config["REDIS_URL"])):
+        q = Queue(name="inpi", default_timeout=default_timeout)
+        delete_task = q.enqueue(tasks.task_remove_csv, args, depends_on=[no_history_task, history_task])
+    response_object = {"status": "success", "data": {"task_id": delete_task.get_id()}}
 
     return jsonify(response_object), 202
 

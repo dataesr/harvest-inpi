@@ -17,9 +17,13 @@ XML_PATTERN = "*.xml"
 NEW_PATTERN = "FR_FRNEW"
 
 
-def files_remove_csv():
+def files_remove_csv() -> None:
     """ Remove csv on disk. """
-    os.remove(LOAD_CSV_PATH)
+    if os.path.exists(LOAD_CSV_PATH):
+        os.remove(LOAD_CSV_PATH)
+        logger.debug(f"Removed file {LOAD_CSV_PATH}")
+    else:
+        logger.debug(f"File {LOAD_CSV_PATH} not found")
 
 
 def files_get_chunks(files:list, max_size:int) -> list:
