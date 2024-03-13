@@ -48,7 +48,7 @@ def task_mongo_load_force(args):
 
 def task_mongo_load_force_with_history(args):
     # Extract and load mongo
-    mongo_load(force=True, force_years=args.get("force_years"))
+    mongo_load(with_history=True, force=True, force_years=args.get("force_years"))
 
 
 def task_mongo_reload(args):

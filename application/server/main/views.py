@@ -61,6 +61,27 @@ def run_task_harvest_inpi_split():
 
     return jsonify(response_object), 202
 
+
+@main_blueprint.route("/mongo_load_force", methods=["POST"])
+def run_task_mongo_load_force():
+    """
+    Forced load of the mongo db.
+    """
+    args = request.get_json(force=True)
+
+    with Connection(redis.from_url(current_app.config["REDIS_URL"])):
+        q = Queue(name="inpi", default_timeout=default_timeout)
+        task = q.enqueue(tasks.task_mongo_load_force, args)
+    response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+
+    with Connection(redis.from_url(current_app.config["REDIS_URL"])):
+        q = Queue(name="inpi", default_timeout=default_timeout)
+        task = q.enqueue(tasks.task_mongo_load_with_history, args)
+    response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+
+    return jsonify(response_object), 202
+
+
 @main_blueprint.route("/mongo_reload", methods=["POST"])
 def run_task_mongo_reload():
     """
