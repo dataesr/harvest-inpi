@@ -311,7 +311,6 @@ def extract(files:list, extract_collections:list, show_progress=False) -> list:
     count_timer = timer()
 
     files_total = len(files)
-    logger.info(f"Start extract of {files_total} files")
 
     for count, file in enumerate(files):
         if show_progress and (timer() - count_timer) > 60:

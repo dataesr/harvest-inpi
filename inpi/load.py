@@ -48,10 +48,12 @@ def mongo_load(with_history=False, force=False, force_years=None, reset_mongo=Fa
         mongo_delete_collections(extract_collections)
 
     # Chunk files
-    for chunk_to_add in files_get_chunks(files_to_add, CHUNK_SIZE):
+    chunks = files_get_chunks(files_to_add, CHUNK_SIZE)
+    for chunk_i, chunk_to_add in enumerate(chunks):
         chunk_timer = timer()
 
         # Extract data
+        logger.info(f"Start extract of chunk {chunk_i}/{len(chunks)} ({len(chunk_to_add)} files)")
         data_to_add = extract(chunk_to_add, extract_collections, show_progress=True)
 
         # Load mongo db
