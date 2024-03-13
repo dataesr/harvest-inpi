@@ -61,7 +61,6 @@ def run_task_harvest_inpi_split():
 
     return jsonify(response_object), 202
 
-
 @main_blueprint.route("/mongo_reload", methods=["POST"])
 def run_task_mongo_reload():
     """
@@ -81,6 +80,36 @@ def run_task_mongo_reload():
 
     return jsonify(response_object), 202
 
+@main_blueprint.route("/mongo_reload_no_history", methods=["POST"])
+def run_task_mongo_reload_no_history():
+    """
+    Reload of the mongo db for collections without history.
+    """
+    args = request.get_json(force=True)
+
+    with Connection(redis.from_url(current_app.config["REDIS_URL"])):
+        q = Queue(name="inpi", default_timeout=default_timeout)
+        task = q.enqueue(tasks.task_mongo_reload, args)
+    response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+
+    return jsonify(response_object), 202
+
+
+@main_blueprint.route("/mongo_reload_with_history", methods=["POST"])
+def run_task_mongo_reload_with_history():
+    """
+    Reload of the mongo db for collections with history.
+    """
+    args = request.get_json(force=True)
+
+    with Connection(redis.from_url(current_app.config["REDIS_URL"])):
+        q = Queue(name="inpi", default_timeout=default_timeout)
+        task = q.enqueue(tasks.task_mongo_reload_with_history, args)
+    response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+
+    return jsonify(response_object), 202
+
+
 @main_blueprint.route("/mongo_reload_force", methods=["POST"])
 def run_task_mongo_reload_force():
     """
@@ -92,6 +121,36 @@ def run_task_mongo_reload_force():
         q = Queue(name="inpi", default_timeout=default_timeout)
         task = q.enqueue(tasks.task_mongo_reload_force, args)
     response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+
+    with Connection(redis.from_url(current_app.config["REDIS_URL"])):
+        q = Queue(name="inpi", default_timeout=default_timeout)
+        task = q.enqueue(tasks.task_mongo_reload_force_with_history, args)
+    response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+
+    return jsonify(response_object), 202
+
+
+@main_blueprint.route("/mongo_reload_force_no_history", methods=["POST"])
+def run_task_mongo_reload_force_no_history():
+    """
+    Forced reload of the mongo db for collections without history.
+    """
+    args = request.get_json(force=True)
+
+    with Connection(redis.from_url(current_app.config["REDIS_URL"])):
+        q = Queue(name="inpi", default_timeout=default_timeout)
+        task = q.enqueue(tasks.task_mongo_reload_force, args)
+    response_object = {"status": "success", "data": {"task_id": task.get_id()}}
+
+    return jsonify(response_object), 202
+
+
+@main_blueprint.route("/mongo_reload_force_with_history", methods=["POST"])
+def run_task_mongo_reload_force_with_history():
+    """
+    Forced reload of the mongo db for collections with history.
+    """
+    args = request.get_json(force=True)
 
     with Connection(redis.from_url(current_app.config["REDIS_URL"])):
         q = Queue(name="inpi", default_timeout=default_timeout)
