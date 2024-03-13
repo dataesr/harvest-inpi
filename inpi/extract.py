@@ -30,12 +30,13 @@ def extract_xml(file: str, data_xml: str, extract_collections: list[str]) -> dic
 
     list_dir = os.listdir(DATA_PATH)
     list_dir.sort()
+    
+    collections = {}
 
-    elem_file = file.split("/")
     if len(data_xml) > 0:
-        collections = {}
         
         # Get xml data
+        elem_file = file.split("/")
         bs_data = BeautifulSoup(data_xml, "xml")
         patent = bs_data.find("fr-patent-document")
         patent_life = bs_data.find("fr-patent-life")
