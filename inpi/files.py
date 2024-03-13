@@ -18,19 +18,19 @@ NEW_PATTERN = "FR_FRNEW"
 
 
 def files_remove_csv():
-    """Remove csv on disk."""
+    """ Remove csv on disk. """
     os.remove(LOAD_CSV_PATH)
 
 
-def files_get_chunks(files, max_size):
-    """Get chunks from list of files.
+def files_get_chunks(files:list[str], max_size:int) -> list[list[str]]:
+    """ Get chunks from list of files.
 
     Args:
-        files (_type_): _description_
-        max_size (_type_): _description_
+        files : List of files.
+        max_size : Max chunk size.
 
     Returns:
-        _type_: _description_
+        List of chunks.
     """
     files_size = len(files)
 
@@ -46,11 +46,14 @@ def files_get_chunks(files, max_size):
     return chunks_list
 
 
-def files_sort(files):
-    """Sort files NEW >> AMD.
+def files_sort(files:list[str]) -> list[str]:
+    """ Sort files by name with NEW before AMD.
 
     Args:
-        files (_type_): _description_
+        files : List of files.
+    
+    Returns:
+        Sorted list of files.
     """
 
     if len(files) > 1:
@@ -61,11 +64,14 @@ def files_sort(files):
     return files
 
 
-def files_remove_duplicates(files):
-    """Remove duplicates from files and keep must recent ones.
+def files_remove_duplicates(files:list[str]) -> list[str]:
+    """ Remove duplicates from files and keep must recent ones.
 
     Args:
-        files (_type_): _description_
+        files : List of files.
+    
+    Returns:
+        List of files.
     """
     # Create dictionnary of occurences from files
     tally = defaultdict(list)
@@ -84,15 +90,15 @@ def files_remove_duplicates(files):
     return files_last
 
 
-def files_import_from_years(path, years=None):
-    """Get all xml files from path.
+def files_import_from_years(path:str, years=None) -> list[str]:
+    """ Get all xml files from path.
 
     Args:
-        path (_type_): _description_
-        years (_type_, optional): _description_. Defaults to None.
+        path: Data path.
+        years (optional): List of years to import. Default to all years.
 
     Returns:
-        _type_: _description_
+        List of files.
     """
     files = []
 
@@ -102,6 +108,9 @@ def files_import_from_years(path, years=None):
 
         for file in glob.glob(path, recursive=True):
             files.append(file)
+        
+        logger.debug(f"[DISK] Found {len(year_files)} xml files")
+        
 
     # Get specific years files
     else:
@@ -118,8 +127,12 @@ def files_import_from_years(path, years=None):
     return files
 
 
-def files_import_from_csv():
-    """Import files list from csv."""
+def files_import_from_csv() -> list[str]:
+    """ Import files list from csv.
+    
+    Returns:
+        List of files.
+    """
     files = []
 
     # Check file exist
@@ -139,16 +152,16 @@ def files_import_from_csv():
     return files
 
 
-def files_import(remove_duplicates=True, force=False, force_years=None):
-    """Import files from list on disk and from years if forced
+def files_import(remove_duplicates=True, force=False, force_years=None) -> list[str]:
+    """ Import files from csv and from disk if forced.
 
     Args:
-        remove_duplicates (bool, optional): _description_. Defaults to True.
-        force (bool, optional): _description_. Defaults to False.
-        force_years (list, optional): _description_. Defaults to [].
+        remove_duplicates (optional): Should duplicates be removed. Defaults to True.
+        force (optional): Import forced from disk. Defaults to False.
+        force_years (optional): Years to import if forced. Defaults to all.
 
     Returns:
-        _type_: _description_
+        List of files.
     """
 
     if force:

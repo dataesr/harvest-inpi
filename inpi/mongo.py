@@ -33,8 +33,16 @@ COLLECTIONS_CONFIG = {
 }
 
 
-def mongo_collections_find_field(field, include=True):
-    """Find collections where field is true."""
+def mongo_collections_find_field(field:str, include=True):
+    """Find collections where field is true.
+
+    Args:
+        field: Config field.
+        include (optional): Should found collections be included. Defaults to True.
+
+    Returns:
+        List of collections.
+    """
     collections_with_field = [
         collection_name
         for collection_name, collection_config in COLLECTIONS_CONFIG.items()
@@ -48,11 +56,11 @@ def mongo_collections_find_field(field, include=True):
     return collections_with_field
 
 
-def mongo_delete_collections(collections_names=[]):
-    """Delete collections from mongo db.
+def mongo_delete_collections(collections_names=None):
+    """ Delete collections from mongo db.
 
     Args:
-        collections_names (list, optional): _description_. Defaults to [].
+        collections_names (optional): List of collections to delete. Defaults to all.
     """
     delete_timer = timer()
 
@@ -68,15 +76,15 @@ def mongo_delete_collections(collections_names=[]):
         mongo_inpi.drop_collection(collection_name)
     mongo_client.close()
 
-    logger.debug(f"Mongo collections dropped in {timer() - delete_timer}")
+    logger.debug(f"Mongo collections dropped in {(timer() - delete_timer):.2f}")
 
 
-def mongo_delete(collection_data, collection_name):
-    """Delete data from a mongo collection.
+def mongo_delete(collection_data:list[dict], collection_name:str):
+    """ Delete data from a mongo collection.
 
     Args:
-        collection_data (_type_): _description_
-        collection_name (_type_): _description_
+        collection_data: List of records.
+        collection_name: Collection name.
     """
     delete_timer = timer()
 
@@ -95,12 +103,12 @@ def mongo_delete(collection_data, collection_name):
     logger.info(f"Collection {collection_name} deleted in {(timer() - delete_timer):.2f}")
 
 
-def mongo_create_index(collection_name, index_name):
-    """Create index on a mongo collection if unique.
+def mongo_create_index(collection_name:str, index_name:str):
+    """ Create index on a mongo collection if unique.
 
     Args:
-        collection_name (_type_): _description_
-        index_name (_type_): _description_
+        collection_name: Collection name.
+        index_name: Index to create.
     """
 
     if not COLLECTIONS_CONFIG[collection_name].get("unique"):
@@ -124,12 +132,12 @@ def mongo_create_index(collection_name, index_name):
 
 
 @retry(delay=50, tries=3)
-def mongo_import_collection(collection_name, collection_data):
-    """Import collection data into mongo db.
+def mongo_import_collection(collection_name:str, collection_data:list):
+    """ Import collection data into mongo db.
 
     Args:
-        collection_name (_type_): _description_
-        collection_data (_type_): _description_
+        collection_name: Collection name.
+        collection_data: List of records.
     """
     if not collection_data:
         logger.warn(f"Collection {collection_name} not imported. Collection data is empty")
@@ -157,11 +165,12 @@ def mongo_import_collection(collection_name, collection_data):
     os.remove(output_json)
 
 
-def mongo_import(data, collections_names):
+def mongo_import(data:list[dict], collections_names:list[str]):
     """Import data into mongo db.
 
     Args:
-        data (_type_): _description_
+        data: List of records.
+        collections_names: List of collections.
     """
 
     if not data:

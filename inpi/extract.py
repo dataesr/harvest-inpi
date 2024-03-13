@@ -15,15 +15,16 @@ XML_PATTERN = "*.xml"
 NEW_PATTERN = "FR_FRNEW"
 
 
-def extract_xml(file: str, data_xml: str, extract_collections: list):
+def extract_xml(file: str, data_xml: str, extract_collections: list[str]) -> dict:
     """Extract xml data from a file.
 
     Args:
-        file (str): _description_
-        data_xml (str): _description_
+        file: File name.
+        data_xml: File xml.
+        extract_collections: Collections to extract from xml.
 
     Returns:
-        _type_: _description_
+        Collections data
     """
     os.chdir(DATA_PATH)
 
@@ -240,14 +241,15 @@ def extract_xml(file: str, data_xml: str, extract_collections: list):
     return collections
 
 
-def extract_file(file, extract_collections):
+def extract_file(file:str, extract_collections:list[str]):
     """Read a file and extract xml data.
 
     Args:
-        file (_type_): _description_
+        file: File name.
+        extract_collections:  Collections to extract from xml.
 
     Returns:
-        _type_: _description_
+        Collections data.
     """
     collections = {}
 
@@ -260,15 +262,16 @@ def extract_file(file, extract_collections):
     return collections
 
 
-def extract(files, extract_collections, show_progress=False):
+def extract(files:list[str], extract_collections:list[str], show_progress=False):
     """Extract data from a list of files.
 
     Args:
-        files (_type_): _description_
-        show_progress (bool, optional): _description_. Defaults to False.
+        files: List of files.
+        extract_collections: Collections to extract from xml.
+        show_progress (optional): Should progress of extraction be displayed. Defaults to False.
 
     Returns:
-        _type_: _description_
+        Collections data.
     """
     collections = []
     extract_timer = timer()

@@ -17,10 +17,13 @@ CHUNK_SIZE = 10000
 
 
 def mongo_load(with_history=False, force=False, force_years=None, reset_mongo=False):
-    """Load files in mongo db
+    """Load files in mongo db.
 
     Args:
-        force (bool, optional): _description_. Defaults to False.
+        with_history (optional): Load collections that requires history. Defaults to False.
+        force (optional): Import forced from disk. Defaults to False.
+        force_years (optional): Years to import if forced. Defaults to all.
+        reset_mongo (optional): Should the mongo db be reset. Defaults to False.
     """
 
     os.chdir(INPI_PATH)
