@@ -141,71 +141,103 @@ def extract_xml(file: str, data_xml: str, extract_collections: list) -> dict:
             application = lec.app_ref(bs_data, publication_number, patent)
             collections["application"] = application.to_dict("record")
 
-        if patent_life:
-            # Fill renewal collection
-            if "renewal" in extract_collections:
+        # Fill renewal collection
+        if "renewal" in extract_collections:
+            dic_renewal = {
+                    "publication-number": publication_number,
+                    "type-payment": "",
+                    "percentile": "",
+                    "date-payment": "",
+                    "amount": "",
+                    "application-number-fr": patent["id"],
+                }
+            if patent_life:
                 renewal = lec.renewal_list(patent_life, publication_number, patent)
                 collections["renewal"] = renewal.to_dict("record")
+                
+            else:
+                collections["renewal"] = dic_renewal
 
-        
-            # Fill errata collection 
-            if "errata" in extract_collections:
-                dic_errata = {
-                    "publication-number": publication_number,
-                    "part": "",
-                    "text": "",
-                    "date-errata": "",
-                    "fr-bopinum": "",
-                    "application-number": patent["id"],
-                }
+        # Fill errata collection 
+        if "errata" in extract_collections:
+            dic_errata = {
+                "publication-number": publication_number,
+                "part": "",
+                "text": "",
+                "date-errata": "",
+                "fr-bopinum": "",
+                "application-number": patent["id"],
+            }
+            if patent_life:
                 errata = lec.errata_list(patent_life, dic_errata)
                 collections["errata"] = errata.to_dict("record")
+            else:
+                collections["errata"] = dic_errata
 
-            # Fill inscription collection
-            if "inscription" in extract_collections:
-                dic_inscription = {
-                    "publication-number": publication_number,
-                    "registered-number": "",
-                    "date-inscription": "",
-                    "code-inscription": "",
-                    "nature-inscription": "",
-                    "fr-bopinum": "",
-                    "application-number": patent["id"],
-                }
+        # Fill inscription collection
+        if "inscription" in extract_collections:
+            dic_inscription = {
+                "publication-number": publication_number,
+                "registered-number": "",
+                "date-inscription": "",
+                "code-inscription": "",
+                "nature-inscription": "",
+                "fr-bopinum": "",
+                "application-number": patent["id"],
+            }
+            if patent_life:
                 inscription = lec.inscr_list(patent_life, dic_inscription)
                 collections["inscription"] = inscription.to_dict("record")
+            else:
+                collections["inscription"] = dic_inscription
 
-            # Fill search collection
-            if "search" in extract_collections:
+        # Fill search collection
+        if "search" in extract_collections:
+            dic_search = {
+                        "publication-number": publication_number,
+                        "type-search": "",
+                        "date-search": "",
+                        "fr-bopinum": "",
+                        "application-number-fr": patent["id"],
+                    }
+            if patent_life:
                 search = lec.search_list(patent_life, publication_number, patent)
                 collections["search"] = search.to_dict("record")
+            else:
+                collections["search"] = dic_search
 
-            # Fill amendedClaim collection
-            if "amendedClaim" in extract_collections:
-                dic_amendedClaim = {
-                    "publication-number": publication_number,
-                    "claim": "",
-                    "application-number": patent["id"],
-                }
+        # Fill amendedClaim collection
+        if "amendedClaim" in extract_collections:
+            dic_amendedClaim = {
+                "publication-number": publication_number,
+                "claim": "",
+                "application-number": patent["id"],
+            }
+            if patent_life:
                 amendedClaim = lec.amended_list(patent_life, dic_amendedClaim)
                 collections["amendedClaim"] = amendedClaim.to_dict("record")
-
-            # Fill citation collection
-            if "citation" in extract_collections:
-                dic_citation = {
-                    "type-citation": "",
-                    "citation": "",
-                    "country": "",
-                    "doc-number": "",
-                    "date-doc": "",
-                    "passage": "",
-                    "category": "",
-                    "claim": "",
-                    "application-number-fr": patent["id"],
-                    "publication-number": publication_number,
-                }
+            else:
+                collections["amendedClaim"] = dic_amendedClaim
+                
+        # Fill citation collection
+        if "citation" in extract_collections:
+            dic_citation = {
+                "type-citation": "",
+                "citation": "",
+                "country": "",
+                "doc-number": "",
+                "date-doc": "",
+                "passage": "",
+                "category": "",
+                "claim": "",
+                "application-number-fr": patent["id"],
+                "publication-number": publication_number,
+            }
+            if patent_life:
                 citation = lec.cit_list(patent_life, dic_citation)
                 collections["citation"] = citation.to_dict("record")
+            else:
+                collections["citation"] = dic_citation
 
         # Fill priority collection 
         if "priority" in extract_collections:
