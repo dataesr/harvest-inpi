@@ -579,8 +579,8 @@ def unzip():
     if len(df_pref_fil) > 0:
         df_pref_fil["fullpath"].to_csv(f"{LOAD_CSV_PATH}", index=False, header=False)
     else:
-        os.remove(LOAD_CSV_PATH)
-
+        if os.path.exists(LOAD_CSV_PATH):
+            os.remove(LOAD_CSV_PATH)
     # # #####################################################################################################
     # logger_mongo = get_logger("Mongo")
     # # load files into INPI db
